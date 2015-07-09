@@ -14,7 +14,7 @@ object CsvRead {
     val sqlContext = new SQLContext(sc)
     val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load(args(1))
 
-    df.printSchema()
+    //df.printSchema()
 
     df.write.format("com.springml.spark.salesforce").option("username","sparktest@springml.com").
     option("password","Fire2015!ZlvTTJsBJopFBMXJWt0xBUjg0").save()

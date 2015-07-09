@@ -28,16 +28,14 @@
         </dependency>
         <dependency>
             <groupId>com.force.api</groupId>
-            <artifactId>force-wsc</artifactId>
+            <artifactId>force-wsc-uber</artifactId>
             <version>34.0</version>
         </dependency>
         <dependency>
             <groupId>com.force.api</groupId>
-            <artifactId>force-partner-api</artifactId>
+            <artifactId>force-partner-api-uber</artifactId>
             <version>34.0</version>
         </dependency>
-
-
 
     </dependencies>
     <build>
@@ -67,7 +65,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>2.3</version>
                 <configuration>
-                    <finalName>spark-datasource-examples</finalName>
+                    <finalName>springml-salesforce-examples</finalName>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>

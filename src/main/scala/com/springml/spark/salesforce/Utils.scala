@@ -11,9 +11,9 @@ object Utils {
     val qualifiedName = datasetName+"."+fieldName
     s"""{
      "description": "",
-      "fullyQualifiedName": $qualifiedName,
-      "label": $fieldName
-      "name": $fieldName,
+      "fullyQualifiedName": "$qualifiedName",
+      "label": "$fieldName",
+      "name": "$fieldName",
       "isSystemField": false,
       "isUniqueId": false,
       "isMultiValue": false,
@@ -28,7 +28,6 @@ object Utils {
         |{
         |"fileFormat": {
         |"charsetName": "UTF-8",
-        |"fieldsEnclosedBy": "\"",
         |"fieldsDelimitedBy": ",",
         |"numberOfLinesToIgnore": 1
         |},
@@ -43,7 +42,7 @@ object Utils {
 
     val fieldsJson = schema.fieldNames.map(field => fieldJson(field,datasetName)).mkString(",")
 
-    val finalJson = beginJsonString+"fields:["+ fieldsJson+"]"+"}]}"
+    val finalJson = beginJsonString+"""  "fields":[  """+ fieldsJson+"]"+"}]}"
 
     finalJson
   }
