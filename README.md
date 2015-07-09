@@ -12,6 +12,10 @@
 
        mvn clean install
 
-#Run
+#Running from cmd
 
+    java -cp target/springml-salesforce.jar com.springml.spark.salesforce.examples.CsvExample local src/main/resources/sales.csv
 
+# IDE
+
+    Load code as Maven project in IDEA

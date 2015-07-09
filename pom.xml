@@ -66,7 +66,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>2.3</version>
                 <configuration>
-                    <finalName>spark-datasource-examples</finalName>
+                    <finalName>springml-salesforce</finalName>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
