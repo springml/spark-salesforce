@@ -1,4 +1,12 @@
-#Add to local repository
+Follow the below steps to run the examples on local machine.
+
+## Prerequisites
+
+* Java
+
+* Maven
+
+#Add Library jars to local repository
 
      mvn install:install-file -Dfile=lib/force-wsc-34.0.0-uber.jar -DgroupId=com.force.api \
     -DartifactId=force-wsc-uber -Dversion=34.0 -Dpackaging=jar
