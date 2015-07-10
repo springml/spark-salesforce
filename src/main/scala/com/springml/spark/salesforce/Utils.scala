@@ -1,12 +1,15 @@
 package com.springml.spark.salesforce
 
-import com.sforce.soap.partner.SaveResult
-import org.apache.spark.sql.types.StructType
+import com.sforce.soap.partner.{SaveResult, Connector, PartnerConnection}
+import com.sforce.ws.ConnectorConfig
+import org.apache.log4j.Logger
+import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
 
 /**
  * Created by madhu on 9/7/15.
  */
-object Utils {
+object Utils extends Serializable{
+
 
   private def fieldJson(fieldName:String,datasetName:String) = {
     val qualifiedName = datasetName+"."+fieldName
@@ -48,7 +51,21 @@ object Utils {
     finalJson
   }
 
+  def createConnection(username:String,password:String):PartnerConnection = {
+    val config = new ConnectorConfig()
+    config.setUsername(username)
+    config.setPassword(password)
+    Connector.newConnection(config)
 
+  }
+
+  def logSaveResultError(result: SaveResult): Unit = {
+    @transient val logger = Logger.getLogger(classOf[DefaultSource])
+    result.getErrors.map(error => {
+      logger.error(error.getMessage)
+      error.getFields.map(logger.error(_))
+    })
+  }
 
 
 

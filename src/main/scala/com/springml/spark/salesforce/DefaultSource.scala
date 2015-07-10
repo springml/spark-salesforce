@@ -1,12 +1,13 @@
 package com.springml.spark.salesforce
 
-import com.databricks.spark.csv.CsvRelation
-import com.sforce.soap.partner.{Connector, SaveResult, PartnerConnection}
 import com.sforce.soap.partner.sobject.SObject
+import com.sforce.soap.partner.{Connector, PartnerConnection, SaveResult}
 import com.sforce.ws.ConnectorConfig
 import org.apache.log4j.Logger
-import org.apache.spark.sql.{DataFrame, SaveMode, SQLContext}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import Utils._
 
 /**
  * Entry point to the Data source API
@@ -14,14 +15,69 @@ import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider}
 class DefaultSource extends CreatableRelationProvider{
 
   val logger = Logger.getLogger(classOf[DefaultSource])
-  def logSaveResultError(result:SaveResult): Unit = {
-    result.getErrors.map(error => {
-      logger.error(error.getMessage)
-      error.getFields.map(logger.error(_))
-    })
+
+
+  private def repartition(rdd:RDD[Row]):RDD[Row] = rdd
+
+  private def writeRawData(rdd: RDD[Row], datasetName: String,userName:String,password:String) = {
+
+    val csvRDD = rdd.map(row => row.toSeq.map(value => value.toString).mkString(","))
+    csvRDD.mapPartitionsWithIndex {
+      case (index, iterator) => {
+        @transient val logger = Logger.getLogger(classOf[DefaultSource])
+        val partNumber = index + 1
+        val data = iterator.toArray.mkString("\n")
+        val sobj = new SObject()
+        sobj.setType("InsightsExternalDataPart")
+        sobj.setField("DataFile", data.getBytes)
+        sobj.setField("InsightsExternalDataId", datasetName)
+        sobj.setField("PartNumber", partNumber)
+        val partnerConnection = Utils.createConnection(userName,password)
+        val results = partnerConnection.create(Array(sobj))
+
+        results.map(saveResult => {
+          if (saveResult.isSuccess) {
+            logger.info(s"successfully written for $datasetName for part $partNumber")
+          } else {
+            logSaveResultError(saveResult)
+          }
+        })
+
+        List(true).iterator
+      }
+
+    }.collect()
   }
 
-  private def writeMetadata(metaDataJson:String,datasetName:String)(implicit partnerConnection: PartnerConnection): Option[String] ={
+  private def commit(id: String,partnerConnection: PartnerConnection) = {
+
+    val sobj = new SObject()
+
+    sobj.setType("InsightsExternalData")
+
+    sobj.setField("Action", "Process")
+
+    sobj.setId(id)
+
+    val results = partnerConnection.update(Array(sobj))
+
+    println(sobj.getField("Action"))
+
+    // This is the rowID from the previous example.
+    val saved = results.map(saveResult => {
+      if (saveResult.isSuccess) {
+        println("committed" + saveResult.getSuccess)
+        true
+      } else {
+        println(saveResult.getErrors.toList)
+
+        false
+      }
+    }).reduce((a, b) => a || b)
+  }
+
+
+  private def writeMetadata(metaDataJson:String,datasetName:String,partnerConnection: PartnerConnection): Option[String] ={
 
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")
@@ -61,16 +117,30 @@ class DefaultSource extends CreatableRelationProvider{
     val datasetName = parameters.getOrElse("datasetName", "testdataset")
 
     logger.info("connecting to sales force")
-    implicit val connection = createConnection(username,password)
+    val connection = createConnection(username,password)
     logger.info("connected to sales force")
 
-    val metaDataJson = Utils.generateMetaString(data.schema,"test")
+    val metaDataJson = Utils.generateMetaString(data.schema, "test")
     logger.info(s"metadata for dataset $datasetName is $metaDataJson")
 
-    val writtenId = writeMetadata(metaDataJson,datasetName)
+    logger.info("uploading metadata for dataset " + datasetName)
+
+    val writtenId = writeMetadata(metaDataJson, datasetName,connection)
     logger.info(s"able to write the metadata is $writtenId")
 
+    logger.info("repartitioning rdd for 10mb partitions")
 
+    val repartitionedRDD = repartition(data.rdd)
+
+    logger.info("writing raw data")
+
+    val rawDataId = writeRawData(repartitionedRDD, writtenId.get,username,password)
+
+    logger.info(s"able to write the raw data is $rawDataId")
+
+    logger.info("finalizing")
+
+    commit(writtenId.get,connection)
 
 
     return  null // need to return an relation
