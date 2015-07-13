@@ -78,6 +78,7 @@ class DefaultSource extends CreatableRelationProvider{
       sys.error("unable to commit data for " + datasetName)
     }
 
+    logger.info(s"successfully written data for dataset $datasetName ")
 
     return createReturnRelation(data)
   }
