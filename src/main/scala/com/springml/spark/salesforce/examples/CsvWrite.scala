@@ -13,10 +13,7 @@ object CsvWrite {
   def main(args: Array[String]) {
 
     val sparkConf = new SparkConf().setMaster(args(0)).setAppName("csv write")
-    .set("mapred.max.split.size","8000000").set("mapred.min.split.size","8000000")
     val sc = new SparkContext(sparkConf)
-    sc.hadoopConfiguration.set("mapred.max.split.size","8000000")
-    sc.hadoopConfiguration.set("mapred.min.split.size","8000000")
     val sqlContext = new SQLContext(sc)
     val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load(args(1))
     val dataSetName = args(2)
