@@ -8,7 +8,7 @@ import org.apache.spark.sql.SQLContext
 /**
  * Created by madhu on 9/7/15.
  */
-object CsvRead {
+object CsvWrite {
 
   def main(args: Array[String]) {
 
