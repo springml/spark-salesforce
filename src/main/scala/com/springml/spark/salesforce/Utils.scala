@@ -3,6 +3,8 @@ package com.springml.spark.salesforce
 import com.sforce.soap.partner.{SaveResult, Connector, PartnerConnection}
 import com.sforce.ws.ConnectorConfig
 import org.apache.log4j.Logger
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
 
 /**
@@ -64,6 +66,16 @@ object Utils extends Serializable{
       logger.error(error.getMessage)
       error.getFields.map(logger.error(_))
     })
+  }
+
+   def repartition(rdd: RDD[Row]): RDD[Row] = {
+
+    val NO_OF_ROWS_PARTITION = 500
+    val totalRows = rdd.count()
+    val partititons = totalRows / NO_OF_ROWS_PARTITION
+    val noPartitions = Math.max(rdd.partitions.length, partititons)
+    val shuffle = rdd.partitions.length < partititons
+    rdd.coalesce(noPartitions.toInt, shuffle)
   }
 
 
