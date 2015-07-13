@@ -7,6 +7,7 @@ import com.springml.spark.salesforce.Utils._
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
 /**
@@ -38,7 +39,7 @@ class DefaultSource extends CreatableRelationProvider {
         logSaveResultError(saveResult)
         None
       }
-    }).filter(_.isDefined).head
+    }).head
 
   }
 
@@ -53,7 +54,7 @@ class DefaultSource extends CreatableRelationProvider {
   }
 
 
-  private def writeRawData(rdd: RDD[Row], datasetName: String,userName:String,password:String) = {
+  private def writeRawData(rdd: RDD[Row], datasetName: String,userName:String,password:String):Boolean = {
 
     val csvRDD = rdd.map(row => row.toSeq.map(value => value.toString).mkString(","))
     csvRDD.mapPartitionsWithIndex {
@@ -69,21 +70,23 @@ class DefaultSource extends CreatableRelationProvider {
         val partnerConnection = Utils.createConnection(userName,password)
         val results = partnerConnection.create(Array(sobj))
 
-        results.map(saveResult => {
+        val resultSuccess= results.map(saveResult => {
           if (saveResult.isSuccess) {
             logger.info(s"successfully written for $datasetName for part $partNumber")
+            true
           } else {
+            logger.info(s"error writing for $datasetName for part $partNumber")
             logSaveResultError(saveResult)
+            false
           }
-        })
-
-        List(true).iterator
+        }).head
+        List(resultSuccess).iterator
       }
 
-    }.collect()
+    }.reduce((a,b) => a && b)
   }
 
-  private def commit(id: String,partnerConnection: PartnerConnection) = {
+  private def commit(id: String,partnerConnection: PartnerConnection):Boolean = {
 
     val sobj = new SObject()
 
@@ -95,19 +98,17 @@ class DefaultSource extends CreatableRelationProvider {
 
     val results = partnerConnection.update(Array(sobj))
 
-    println(sobj.getField("Action"))
-
     // This is the rowID from the previous example.
     val saved = results.map(saveResult => {
       if (saveResult.isSuccess) {
-        println("committed" + saveResult.getSuccess)
+        logger.info("committed complete")
         true
       } else {
         println(saveResult.getErrors.toList)
-
         false
       }
-    }).reduce((a, b) => a || b)
+    }).reduce((a, b) => a && b)
+    saved
   }
 
 
@@ -123,6 +124,17 @@ class DefaultSource extends CreatableRelationProvider {
   }
 
 
+  private def createReturnRelation(data: DataFrame) = {
+    new BaseRelation {
+
+      override def sqlContext: SQLContext = data.sqlContext
+
+      override def schema: StructType = data.schema
+    }
+
+  }
+
+
 
 
 
@@ -130,7 +142,7 @@ class DefaultSource extends CreatableRelationProvider {
 
     val username = parameters.getOrElse("username", sys.error("'username' must be specified for sales force."))
     val password = parameters.getOrElse("password", sys.error("'password' must be specified for sales force."))
-    val datasetName = parameters.getOrElse("datasetName", "testdataset")
+    val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for sales force."))
 
 
     logger.info("connecting to sales force")
@@ -143,6 +155,11 @@ class DefaultSource extends CreatableRelationProvider {
     logger.info("uploading metadata for dataset " + datasetName)
 
     val writtenId = writeMetadata(metaDataJson, datasetName,connection)
+
+    if(!writtenId.isDefined) {
+      sys.error("unable to write metadata for data set" +datasetName)
+    }
+
     logger.info(s"able to write the metadata is $writtenId")
 
 
@@ -153,18 +170,28 @@ class DefaultSource extends CreatableRelationProvider {
 
     logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
-    logger.info("writing raw data")
+    logger.info("writing data")
 
-    val rawDataId = writeRawData(repartitionedRDD, writtenId.get,username,password)
+    val successfulWrite = writeRawData(repartitionedRDD, writtenId.get,username,password)
 
-    logger.info(s"able to write the raw data is $rawDataId")
+    logger.info(s"writing data was successful was$successfulWrite")
 
-    logger.info("finalizing")
+    if(!successfulWrite) {
+      sys.error("unable to write data for " +datasetName)
+    }
 
-    commit(writtenId.get,connection)
+    logger.info("committing")
+
+    val committed = commit(writtenId.get,connection)
+
+    logger.info(s"committing data was successful was $committed")
+
+    if(!committed) {
+      sys.error("unable to commit data for " +datasetName)
+    }
 
 
-    return null
+    return createReturnRelation(data)
   }
 
 
