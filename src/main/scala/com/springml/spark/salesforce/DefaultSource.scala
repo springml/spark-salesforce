@@ -1,12 +1,13 @@
 package com.springml.spark.salesforce
 
 import com.sforce.soap.partner.sobject.SObject
-import com.sforce.soap.partner.{PartnerConnection, SaveResult}
+import com.sforce.soap.partner.{Connector, PartnerConnection}
+import com.sforce.ws.ConnectorConfig
+import com.springml.spark.salesforce.Utils._
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
-import Utils._
 
 /**
  * Entry point to the save part
@@ -50,8 +51,6 @@ class DefaultSource extends CreatableRelationProvider {
     val shuffle = rdd.partitions.length < partititons
     rdd.coalesce(noPartitions.toInt,shuffle)
   }
-
-
 
 
   private def writeRawData(rdd: RDD[Row], datasetName: String,userName:String,password:String) = {
@@ -109,9 +108,22 @@ class DefaultSource extends CreatableRelationProvider {
         false
       }
     }).reduce((a, b) => a || b)
+  }
+
+
+
+
+  private def createConnection(username:String,password:String):PartnerConnection = {
+    val config = new ConnectorConfig()
+    config.setUsername(username)
+    config.setPassword(password)
+    Connector.newConnection(config)
 
 
   }
+
+
+
 
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame): BaseRelation = {
@@ -121,10 +133,9 @@ class DefaultSource extends CreatableRelationProvider {
     val datasetName = parameters.getOrElse("datasetName", "testdataset")
 
 
-    val connection = Utils.createConnection(username,password)
-
-    logger.info("able to connect to the sales force webservice")
-
+    logger.info("connecting to sales force")
+    val connection = createConnection(username,password)
+    logger.info("connected to sales force")
 
     val metaDataJson = Utils.generateMetaString(data.schema, "test")
     logger.info(s"metadata for dataset $datasetName is $metaDataJson")
@@ -134,8 +145,8 @@ class DefaultSource extends CreatableRelationProvider {
     val writtenId = writeMetadata(metaDataJson, datasetName,connection)
     logger.info(s"able to write the metadata is $writtenId")
 
-    logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
 
+    logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
     logger.info("repartitioning rdd for 10mb partitions")
 
     val repartitionedRDD = repartition(data.rdd)
@@ -152,9 +163,14 @@ class DefaultSource extends CreatableRelationProvider {
 
     commit(writtenId.get,connection)
 
+
     return null
   }
 
 
+
+
 }
+
+
 

@@ -13,7 +13,6 @@ object Utils extends Serializable{
 
   private def fieldJson(fieldName:String,datasetName:String) = {
     val qualifiedName = datasetName+"."+fieldName
-    //if(fieldName.equalsIgnoreCase("transactionId"))
     s"""{
      "description": "",
       "fullyQualifiedName": "$qualifiedName",
@@ -24,20 +23,6 @@ object Utils extends Serializable{
       "isMultiValue": false,
       "type": "Text"
     } """
-    /*else
-      s"""{
-     "description": "",
-      "fullyQualifiedName": "$qualifiedName",
-      "label": "$fieldName",
-      "name": "$fieldName",
-      "isSystemField": false,
-      "isUniqueId": false,
-      "isMultiValue": false,
-      "type": "Numeric",
-      "defaultValue": "0",
-      "precision": 10
-      } """*/
-
   }
 
   def generateMetaString(schema:StructType,datasetName:String):String = {

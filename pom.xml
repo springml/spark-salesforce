@@ -27,16 +27,15 @@
             <version>1.1.0</version>
         </dependency>
         <dependency>
-            <groupId>com.force.api</groupId>
-            <artifactId>force-wsc-uber</artifactId>
-            <version>34.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.force.api</groupId>
-            <artifactId>force-partner-api-uber</artifactId>
-            <version>34.0</version>
-        </dependency>
-
+             <groupId>com.force.api</groupId>
+             <artifactId>force-wsc-uber</artifactId>
+             <version>34.0</version>
+         </dependency>
+         <dependency>
+             <groupId>com.force.api</groupId>
+             <artifactId>force-partner-api-uber</artifactId>
+             <version>34.0</version>
+         </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -65,7 +64,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>2.3</version>
                 <configuration>
-                    <finalName>springml-salesforce-examples</finalName>
+                    <finalName>springml-salesforce</finalName>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
