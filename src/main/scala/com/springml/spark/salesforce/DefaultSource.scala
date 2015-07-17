@@ -37,7 +37,7 @@ class DefaultSource extends CreatableRelationProvider{
 
     val dataWriter = new DataWriter(username,password,datasetName)
 
-    val metaDataJson = Utils.generateMetaString(data.schema, "test")
+    val metaDataJson = Utils.generateMetaString(data.schema, datasetName)
     logger.info(s"metadata for dataset $datasetName is $metaDataJson")
 
     logger.info("uploading metadata for dataset " + datasetName)

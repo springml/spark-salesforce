@@ -27,14 +27,14 @@ object Utils extends Serializable{
     } """
   }
 
-  def generateMetaString(schema:StructType,datasetName:String):String = {
+  def generateMetaString(schema:StructType, datasetName:String):String = {
     val beginJsonString =
       s"""
         |{
         |"fileFormat": {
         |"charsetName": "UTF-8",
         |"fieldsDelimitedBy": ",",
-        |"numberOfLinesToIgnore": 1
+        |"numberOfLinesToIgnore": 0
         |},
         |"objects": [
         |{
@@ -72,10 +72,10 @@ object Utils extends Serializable{
 
     val NO_OF_ROWS_PARTITION = 500
     val totalRows = rdd.count()
-    val partititons = totalRows / NO_OF_ROWS_PARTITION
-    val noPartitions = Math.max(rdd.partitions.length, partititons)
-    val shuffle = rdd.partitions.length < partititons
-    rdd.coalesce(noPartitions.toInt, shuffle)
+    val partitions = Math.round(totalRows / NO_OF_ROWS_PARTITION) + 1
+    //val noPartitions = Math.max(rdd.partitions.length, partititons)
+    val shuffle = rdd.partitions.length < partitions
+    rdd.coalesce(partitions.toInt, shuffle)
   }
 
 
