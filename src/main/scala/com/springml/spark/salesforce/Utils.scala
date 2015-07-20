@@ -56,6 +56,8 @@ object Utils extends Serializable{
     val config = new ConnectorConfig()
     config.setUsername(username)
     config.setPassword(password)
+    config.setAuthEndpoint("https://login.salesforce.com/services/Soap/u/34.0")
+    config.setServiceEndpoint("https://login.salesforce.com/services/Soap/u/34.0")
     Connector.newConnection(config)
 
   }
