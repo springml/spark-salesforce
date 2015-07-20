@@ -20,6 +20,10 @@ resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositori
 
 resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
+
+
+
 //unmanagedJars in Compile += file("lib/partner.jar")
 
 // Spark Package Details (sbt-spark-package)
