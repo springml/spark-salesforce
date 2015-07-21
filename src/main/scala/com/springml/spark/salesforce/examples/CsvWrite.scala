@@ -20,8 +20,8 @@ object CsvWrite {
 
     df.printSchema()
 
-    df.write.format("com.springml.spark.salesforce").option("username","sparktest@springml.com").
-    option("password","Fire2015!ZlvTTJsBJopFBMXJWt0xBUjg0").option("datasetName",dataSetName).save()
+    df.write.format("com.springml.spark.salesforce").option("username", args(3)).
+      option("password", args(4)).option("datasetName", dataSetName).save()
 
 
   }

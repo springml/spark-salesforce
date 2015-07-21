@@ -33,8 +33,8 @@ object InMemoryWrite {
 
     inMemoryDF.printSchema()
 
-    inMemoryDF.write.format("com.springml.spark.salesforce").option("username", "sparktest@springml.com").
-      option("password", "Fire2015!ZlvTTJsBJopFBMXJWt0xBUjg0").option("datasetName", dataSetName).save()
+    inMemoryDF.write.format("com.springml.spark.salesforce").option("username", args(2)).
+      option("password", args(3)).option("datasetName", dataSetName).save()
 
 
   }
