@@ -2,7 +2,7 @@ name := "spark-salesforce-wave"
 
 version := "1.0.0"
 
-organization := "springml"
+organization := "com.springml"
 
 scalaVersion := "2.10.4"
 
