@@ -21,7 +21,7 @@ resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositori
 resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
-
+libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
 
 
 //unmanagedJars in Compile += file("lib/partner.jar")
