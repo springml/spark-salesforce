@@ -37,4 +37,40 @@ spDependencies += "databricks/spark-csv:1.0.3"
 
 sparkComponents += "sql"
 
+publishMavenStyle := true
+
+spAppendScalaVersion := true
+
+spIncludeMaven := true
+
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (version.value.endsWith("SNAPSHOT"))
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+}
+
+pomExtra := (
+  <url>https://github.com/springml/spark-salesforce</url>
+    <licenses>
+      <license>
+        <name>Apache License, Verision 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+    <scm>
+      <connection>scm:git:github.com/springml/spark-salesforce</connection>
+      <developerConnection>scm:git:git@github.com:springml/spark-salesforce</developerConnection>
+      <url>github.com/springml/spark-salesforce</url>
+    </scm>
+    <developers>
+      <developer>
+        <id>springml</id>
+        <name>Springml</name>
+        <url>http://www.springml.com</url>
+      </developer>
+    </developers>)
+
 
