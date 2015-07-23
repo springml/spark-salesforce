@@ -24,22 +24,18 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
 
 
-//unmanagedJars in Compile += file("lib/partner.jar")
-
 // Spark Package Details (sbt-spark-package)
 spName := "springml/spark-salesforce-wave"
+
+spAppendScalaVersion := true
+
+spDependencies += "databricks/spark-csv:1.0.3"
 
 sparkVersion := "1.4.0"
 
 sparkComponents += "sql"
 
-spDependencies += "databricks/spark-csv:1.0.3"
-
-sparkComponents += "sql"
-
 publishMavenStyle := true
-
-spAppendScalaVersion := true
 
 spIncludeMaven := true
 

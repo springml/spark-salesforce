@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 springml
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.springml.spark.salesforce
 
 import com.sforce.soap.partner.{SaveResult, Connector, PartnerConnection}
@@ -10,9 +26,9 @@ import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
 
 /**
  * Created by madhu on 9/7/15.
+ * Utility to construct metadata and repartition RDD
  */
 object Utils extends Serializable {
-
 
   private def fieldJson(fieldName:String,datasetName:String) = {
     val qualifiedName = datasetName+"."+fieldName
@@ -49,7 +65,6 @@ object Utils extends Serializable {
     val fieldsJson = schema.fieldNames.map(field => fieldJson(field,datasetName)).mkString(",")
 
     val finalJson = beginJsonString+"""  "fields":[  """+ fieldsJson+"]"+"}]}"
-
     finalJson
   }
 
@@ -60,7 +75,6 @@ object Utils extends Serializable {
     config.setAuthEndpoint("https://login.salesforce.com/services/Soap/u/34.0")
     config.setServiceEndpoint("https://login.salesforce.com/services/Soap/u/34.0")
     Connector.newConnection(config)
-
   }
 
   def logSaveResultError(result: SaveResult): Unit = {
