@@ -43,7 +43,7 @@ class TestUtils extends FunSuite {
 
     val repartitionDF = Utils.repartition(inMemoryRDD)
 
-    assert(repartitionDF.partitions.length >= 30)
+    assert(repartitionDF.partitions.length >= 29)
 
 
   }
