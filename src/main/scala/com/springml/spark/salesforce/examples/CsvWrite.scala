@@ -20,7 +20,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.SQLContext
 
 /**
- * Created by madhu on 9/7/15.
  * Example to read a CSV file and write it into Salesforce Wave
  */
 object CsvWrite {

@@ -19,13 +19,13 @@ package com.springml.spark.salesforce
 import com.sforce.soap.partner.{SaveResult, Connector, PartnerConnection}
 import com.sforce.ws.ConnectorConfig
 import com.madhukaraphatak.sizeof.SizeEstimator
+
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
 
 /**
- * Created by madhu on 9/7/15.
  * Utility to construct metadata and repartition RDD
  */
 object Utils extends Serializable {
@@ -99,27 +99,36 @@ object Utils extends Serializable {
 
   def getTotalSize(rdd: RDD[Row]): Long = {
     // This can be fetched as optional parameter
-    val NO_OF_SAMPLE_ROWS = 10l;
+    val NO_OF_SAMPLE_ROWS = 10;
     val totalRows = rdd.count();
     var totalSize = 0l
+    
     if (totalRows > NO_OF_SAMPLE_ROWS) {
-      val sampleRDD = rdd.sample(true, NO_OF_SAMPLE_ROWS)
-      val sampleRDDSize = getRDDSize(sampleRDD)
-      totalSize = sampleRDDSize.*(totalRows)./(NO_OF_SAMPLE_ROWS)
+      val sampleObj = rdd.takeSample(false, NO_OF_SAMPLE_ROWS)
+      val sampleRowSize = rowSize(sampleObj)
+      totalSize = sampleRowSize * (totalRows / NO_OF_SAMPLE_ROWS)
     } else {
-      totalSize = getRDDSize(rdd)
+    
+      totalSize = rddSize(rdd)
     }
     
     totalSize
   }
 
-  def getRDDSize(rdd: RDD[Row]) : Long = {
-      var rddSize = 0l
-      val rows = rdd.collect()
-      for (i <- 0 until rows.length) {
-         rddSize += SizeEstimator.estimate(rows.apply(i).toSeq.map { value => value.toString() }.mkString(","))
+  def rddSize(rdd: RDD[Row]) : Long = {
+    rowSize(rdd.collect())
+  }
+  
+  def rowSize(rows: Array[Row]) : Long = {
+      var sizeOfRows = 0l
+      for (row <- rows) {
+      //for (i <- 0 until rows.length) {
+        val rowSize = SizeEstimator.estimate(row.toSeq.map { value => value.toString() }.mkString(","))
+        // Converting to bytes
+        sizeOfRows += rowSize
       }
     
-      rddSize
+      sizeOfRows
   }
+  
 }

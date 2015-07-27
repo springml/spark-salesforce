@@ -23,7 +23,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 
 /**
- * Created by madhu on 13/7/15.
  * Writer responsible for writing the objects into Salesforce Wave
  * It uses Partner External Metadata SOAP API to write the dataset
  */
