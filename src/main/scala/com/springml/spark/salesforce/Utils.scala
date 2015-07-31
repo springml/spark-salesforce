@@ -16,9 +16,15 @@
 
 package com.springml.spark.salesforce
 
+import scala.collection.mutable.Map
+import scala.io.Source
+
 import com.sforce.soap.partner.{SaveResult, Connector, PartnerConnection}
 import com.sforce.ws.ConnectorConfig
 import com.madhukaraphatak.sizeof.SizeEstimator
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
@@ -29,44 +35,6 @@ import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
  * Utility to construct metadata and repartition RDD
  */
 object Utils extends Serializable {
-
-  private def fieldJson(fieldName:String,datasetName:String) = {
-    val qualifiedName = datasetName+"."+fieldName
-    s"""{
-     "description": "",
-      "fullyQualifiedName": "$qualifiedName",
-      "label": "$fieldName",
-      "name": "$fieldName",
-      "isSystemField": false,
-      "isUniqueId": false,
-      "isMultiValue": false,
-      "type": "Text"
-    } """
-  }
-
-  def generateMetaString(schema:StructType, datasetName:String):String = {
-    val beginJsonString =
-      s"""
-        |{
-        |"fileFormat": {
-        |"charsetName": "UTF-8",
-        |"fieldsDelimitedBy": ",",
-        |"numberOfLinesToIgnore": 0
-        |},
-        |"objects": [
-        |{
-        |"connector": "AcmeCSVConnector",
-        |"description": "",
-        |"fullyQualifiedName": "$datasetName",
-        |"label": "$datasetName",
-        |"name": "$datasetName",
-      """.stripMargin
-
-    val fieldsJson = schema.fieldNames.map(field => fieldJson(field,datasetName)).mkString(",")
-
-    val finalJson = beginJsonString+"""  "fields":[  """+ fieldsJson+"]"+"}]}"
-    finalJson
-  }
 
   def createConnection(username:String,password:String):PartnerConnection = {
     val config = new ConnectorConfig()
@@ -81,7 +49,9 @@ object Utils extends Serializable {
     @transient val logger = Logger.getLogger(classOf[DefaultSource])
     result.getErrors.map(error => {
       logger.error(error.getMessage)
+      println(error.getMessage)
       error.getFields.map(logger.error(_))
+      error.getFields.map { println }
     })
   }
 
@@ -130,5 +100,28 @@ object Utils extends Serializable {
     
       sizeOfRows
   }
+
+  def metadataConfig(usersMetadataConfig: Option[String]) = {
+    var systemMetadataConfig = readMetadataConfig();
+    if (usersMetadataConfig != null && usersMetadataConfig.isDefined) {
+      val usersMetadataConfigMap = readJSON(usersMetadataConfig.get)
+      systemMetadataConfig = systemMetadataConfig ++ usersMetadataConfigMap 
+    }
+    
+    systemMetadataConfig
+  }
   
+  private def readMetadataConfig() : Map[String, Map[String, String]]= {
+    val source = Source.fromURL(getClass.getResource("/metadata_config.json"))
+    val jsonContent = try source.mkString finally source.close()
+    
+    readJSON(jsonContent)
+  }
+  
+  private def readJSON(jsonContent : String) : Map[String, Map[String, String]]= {
+    val mapper = new ObjectMapper() with ScalaObjectMapper
+    mapper.registerModule(DefaultScalaModule)
+    
+    mapper.readValue[Map[String, Map[String, String]]](jsonContent)
+  }
 }

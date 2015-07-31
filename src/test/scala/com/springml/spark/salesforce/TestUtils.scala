@@ -35,14 +35,38 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
     sc.stop()
   }
    
-  test("Test Metadata generation") {
-    val columnNames = List("c1", "c2", "c3", "c4")
-    val columnStruct = columnNames.map(colName => StructField(colName, StringType, true))
-    val schema = StructType(columnStruct)
+  test("Test Metadata Configuration") {
+    val metadataConfig = Utils.metadataConfig(null)
+    
+    assert(metadataConfig.size == 7)
+    val integerConfig = metadataConfig.get("integer")
+    assert(integerConfig.isDefined == true)
+    assert(integerConfig.get.get("precision").isDefined == true)
+    val timestampConfig = metadataConfig.get("timestamp")
+    assert(timestampConfig.isDefined == true)
+    assert(timestampConfig.get.get("format").isDefined == true)
+  }
+  
+  test("Test Custom Metadata Configuration") {
+    val customTimestampConfig = """{"timestamp":{"wave_type":"Date","format":"yyyy/MM/dd'T'HH:mm:ss"}}"""
+    val metadataConfig = Utils.metadataConfig(Some(customTimestampConfig))
+    
+    assert(metadataConfig.size == 7)
+    val timestampConfig = metadataConfig.get("timestamp")
+    assert(timestampConfig.isDefined == true)
+    assert(timestampConfig.get.get("format").isDefined == true)
+    assert(timestampConfig.get.get("format").get == "yyyy/MM/dd'T'HH:mm:ss")
+  }
 
-    val schemaString = Utils.generateMetaString(schema,"sampleDataSet")
-    assert(schemaString.length > 0)
-    assert(schemaString.contains("sampleDataSet"))
+  test("Test Custom Metadata Configuration with new datatype") {
+    val customTimestampConfig = """{"mydataType":{"wave_type":"Date","format":"yy-MM-dd"}}"""
+    val metadataConfig = Utils.metadataConfig(Some(customTimestampConfig))
+    
+    assert(metadataConfig.size == 8)
+    val myDataTypeConfig = metadataConfig.get("mydataType")
+    assert(myDataTypeConfig.isDefined == true)
+    assert(myDataTypeConfig.get.get("format").isDefined == true)
+    assert(myDataTypeConfig.get.get("format").get == "yy-MM-dd")
   }
 
   test("Test repartition for in memory RDD") {

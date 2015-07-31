@@ -46,7 +46,12 @@ class DataWriter (val userName: String, val password: String, val datasetName: S
         Some(saveResult.getId)
       } else {
         logger.error("failed to write metadata")
+        println("******************************************************************")
+        println("failed to write metadata")
         logSaveResultError(saveResult)
+        println("******************************************************************")
+        println(metaDataJson)
+        println("******************************************************************")
         None
       }
     }).head

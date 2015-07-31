@@ -24,6 +24,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import com.springml.spark.salesforce.metadata.MetadataConstructor
 
 /**
  * Default source for SalesForce wave data source. It writes any
@@ -45,9 +46,12 @@ class DefaultSource extends CreatableRelationProvider{
     val username = parameters.getOrElse("username", sys.error("'username' must be specified for sales force."))
     val password = parameters.getOrElse("password", sys.error("'password' must be specified for sales force."))
     val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for sales force."))
+    val usersMetadataConfig = parameters.get("metadataConfig")
+    
     val dataWriter = new DataWriter(username,password,datasetName)
 
-    val metaDataJson = Utils.generateMetaString(data.schema, datasetName)
+    val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
+    val metaDataJson = MetadataConstructor.generateMetaString(data.schema, datasetName, metadataConfig)
     logger.info(s"metadata for dataset $datasetName is $metaDataJson")
     logger.info("uploading metadata for dataset " + datasetName)
 

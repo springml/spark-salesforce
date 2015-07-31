@@ -1,0 +1,33 @@
+{
+  "integer": {
+    "wave_type": "Numeric",
+    "precision": "10",
+    "scale": "0"
+  },
+  "long": {
+    "wave_type": "Numeric",
+    "precision": "18",
+    "scale": "0"
+  },
+  "float": {
+    "wave_type": "Numeric",
+    "precision": "14",
+    "scale": "4"
+  },
+  "short": {
+    "wave_type": "Numeric",
+    "precision": "10",
+    "scale": "0"
+  },
+  "date": {
+    "wave_type": "Date",
+    "format": "yyyy-MM-dd"
+  },
+  "timestamp": {
+    "wave_type": "Date",
+    "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+  },
+  "string": {
+    "wave_type": "Text"
+  }
+}
