@@ -59,12 +59,11 @@ class DataWriter (val userName: String, val password: String, val datasetName: S
 
   def writeData(rdd: RDD[Row],metadataId:String): Boolean = {
     val csvRDD = rdd.map(row => row.toSeq.map(value => value.toString).mkString(","))
-
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
         @transient val logger = Logger.getLogger(classOf[DataWriter])
         val partNumber = index + 1
-        val data = iterator.toArray.mkString("\n")
+        val data = "\n" + iterator.toArray.mkString("\n")
         val sobj = new SObject()
     
         sobj.setType("InsightsExternalDataPart")
