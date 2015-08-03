@@ -84,12 +84,12 @@ Metadata configuration has to be provided in JSON format via "metadataConfig" op
 }
 ```
 
-* "<df_data_type>": Dataframe datatype for which the Wave datatype to be mapped. 
-* "<wave_data_type>": Salesforce wave supports Text, Numeric and Date types.
-* "<precision>": The maximum number of digits in a numeric value, or the length of a text value
-* "<scale>": The number of digits to the right of the decimal point in a numeric value. Must be less than the precision value
-* "<format>": The format of the numeric or date value. 
-* "<defaultValue>": The default value of the field, if any. If not provided for Numeric fields, 0 is used as defaultValue
+* df_data_type: Dataframe datatype for which the Wave datatype to be mapped. 
+* wave_data_type: Salesforce wave supports Text, Numeric and Date types.
+* precision: The maximum number of digits in a numeric value, or the length of a text value
+* scale: The number of digits to the right of the decimal point in a numeric value. Must be less than the precision value
+* format: The format of the numeric or date value. 
+* defaultValue: The default value of the field, if any. If not provided for Numeric fields, 0 is used as defaultValue
 
 More details on Salesforce Wave Metadata can be found [here] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf)
 
