@@ -74,21 +74,22 @@ Metadata configuration has to be provided in JSON format via "metadataConfig" op
 ```json
 
 {
-  "integer": {
+  "<df_data_type>": {
   "wave_type": "<wave_data_type>",
   "precision": "<precision>",
-  "scale": "<scale>"
-  "format": "<format>"
+  "scale": "<scale>",
+  "format": "<format>",
   "defaultValue": "<defaultValue>"
   }
 }
 ```
 
-<wave_data_type> - Salesforce wave supports Text, Numeric and Date.
-<precision> - The maximum number of digits in a numeric value, or the length of a text value
-<scale> - The number of digits to the right of the decimal point in a numeric value. Must be less than the precision value
-<format> - The format of the numeric or date value. 
-<defaultValue> - The default value of the field, if any. If not provided for Numeric fields, 0 is used as defaultValue
+<df_data_type>: Dataframe datatype for which the Wave datatype to be mapped. 
+<wave_data_type>: Salesforce wave supports Text, Numeric and Date.
+<precision>: The maximum number of digits in a numeric value, or the length of a text value
+<scale>: The number of digits to the right of the decimal point in a numeric value. Must be less than the precision value
+<format>: The format of the numeric or date value. 
+<defaultValue>: The default value of the field, if any. If not provided for Numeric fields, 0 is used as defaultValue
 
 More details on Salesforce Wave Metadata can be found [here] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf)
 
@@ -96,11 +97,11 @@ More details on Salesforce Wave Metadata can be found [here] (https://resources.
 ```json
 
 {
-  "integer": {
+  "float": {
   "wave_type": "Numeric",
   "precision": "10",
-  "scale": "2"
-  "format": "##0.00"
+  "scale": "2",
+  "format": "##0.00",
   "defaultValue": "0.00"
   }
 }
@@ -113,18 +114,21 @@ This sample is to change the format of the timestamp datatype.
 import org.apache.spark.sql.SQLContext
 
 val sqlContext = new SQLContext(sc)
-// Default format is yyyy-MM-dd'T'HH:mm:ss.SSS'Z' and the this sample changes to yyyy/MM/dd'T'HH:mm:ss
+// Default format is yyyy-MM-dd'T'HH:mm:ss.SSS'Z' and 
+// the this sample changes to yyyy/MM/dd'T'HH:mm:ss
 val modifiedTimestampConfig = """{"timestamp":{"wave_type":"Date","format":"yyyy/MM/dd'T'HH:mm:ss"}}"""
 // Using spark-csv package to load dataframes
-val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load("your_csv_location")
+val df = sqlContext.read.format("com.databricks.spark.csv").
+                          option("header", "true").
+                          load("your_csv_location")
 df.
    write.
-   format("com.springml.spark.salesforce").
-   option("username", "your_salesforce_username").
-   option("password", "your_salesforce_password_with_secutiry_token").
-   option("datasetName", "your_dataset_name").
-   option("metadataConfig", modifiedTimestampConfig).
-   save()
+    format("com.springml.spark.salesforce").
+    option("username", "your_salesforce_username").
+    option("password", "your_salesforce_password_with_secutiry_token").
+    option("datasetName", "your_dataset_name").
+    option("metadataConfig", modifiedTimestampConfig).
+    save()
 
 ```
 
