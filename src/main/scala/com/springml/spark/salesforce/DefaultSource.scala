@@ -43,49 +43,47 @@ class DefaultSource extends CreatableRelationProvider{
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame): BaseRelation = {
 
-    val username = parameters.getOrElse("username", sys.error("'username' must be specified for sales force."))
-    val password = parameters.getOrElse("password", sys.error("'password' must be specified for sales force."))
-    val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for sales force."))
+    val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
+    val password = parameters.getOrElse("password", sys.error("'password' must be specified for salesforce."))
+    val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for salesforce."))
     val usersMetadataConfig = parameters.get("metadataConfig")
     
-    val dataWriter = new DataWriter(username,password,datasetName)
+    val dataWriter = new DataWriter(username, password, datasetName)
 
     val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
     val metaDataJson = MetadataConstructor.generateMetaString(data.schema, datasetName, metadataConfig)
-    logger.info(s"metadata for dataset $datasetName is $metaDataJson")
-    logger.info("uploading metadata for dataset " + datasetName)
+    logger.info(s"Metadata for dataset $datasetName is $metaDataJson")
+    logger.info("Uploading metadata for dataset " + datasetName)
 
     val writtenId = dataWriter.writeMetadata(metaDataJson)
     if (!writtenId.isDefined) {
-      sys.error("unable to write metadata for data set" + datasetName)
+      sys.error("Unable to write metadata for dataset " + datasetName)
     }
-    logger.info(s"able to write the metadata is $writtenId")
+    logger.info(s"Able to write the metadata is $writtenId")
 
     logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
-    logger.info("repartitioning rdd for 10mb partitions")
+    logger.info("Repartitioning rdd for 10mb partitions")
     val repartitionedRDD = Utils.repartition(data.rdd)
     logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
-    logger.info("writing data")
+    logger.info("Writing data")
     val successfulWrite = dataWriter.writeData(repartitionedRDD, writtenId.get)
-    logger.info(s"writing data was successful was$successfulWrite")
+    logger.info(s"Writing data was successful was $successfulWrite")
     if (!successfulWrite) {
-      sys.error("unable to write data for " + datasetName)
+      sys.error("Unable to write data for " + datasetName)
     }
 
-    logger.info("committing")
+    logger.info("Committing...")
     val committed = dataWriter.commit(writtenId.get)
     logger.info(s"committing data was successful was $committed")
 
     if (!committed) {
-      sys.error("unable to commit data for " + datasetName)
+      sys.error("Unable to commit data for " + datasetName)
     }
-    logger.info(s"successfully written data for dataset $datasetName ")
+    logger.info(s"Successfully written data for dataset $datasetName ")
+    println(s"Successfully written data for dataset $datasetName ")
 
     return createReturnRelation(data)
   }
 
 }
-
-
-
