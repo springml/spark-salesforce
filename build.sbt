@@ -26,7 +26,7 @@ libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" 
 
 
 // Spark Package Details (sbt-spark-package)
-spName := "springml/spark-salesforce-wave"
+spName := "springml/spark-salesforce"
 
 spAppendScalaVersion := true
 
@@ -39,6 +39,17 @@ sparkComponents += "sql"
 publishMavenStyle := true
 
 spIncludeMaven := true
+
+spShortDescription := "Spark Salesforce Wave Connector"
+
+spDescription := """Spark Salesforce Wave Connector
+                    | - Creates Salesforce Wave Datasets using dataframe
+                    | - Constructs Salesforce Wave dataset's metadata using schema present in dataframe
+                    | - Can use custom metadata for constructing Salesforce Wave dataset's metadata""".stripMargin
+
+licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
+
+credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
