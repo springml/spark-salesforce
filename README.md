@@ -20,10 +20,10 @@ You can link against this library in your program at the following ways:
 
 
 ## Using with Spark shell
-This package can be added to Spark using the `--jars` command line option.  For example, to include it when starting the spark shell:
+This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
 
 ```
-$ bin/spark-shell --jars com.springml:spark-salesforce-wave_2.10:1.0.0
+$ bin/spark-shell --packages com.springml:spark-salesforce-wave_2.10:1.0.0
 ```
 
 ## Features
