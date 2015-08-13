@@ -1,6 +1,6 @@
-name := "spark-salesforce-wave"
+name := "spark-salesforce"
 
-version := "1.0.0"
+version := "1.0.1"
 
 organization := "com.springml"
 
