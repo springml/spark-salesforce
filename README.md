@@ -158,11 +158,11 @@ df.
 #### Upload Databricks table into Salesforce Wave
 * Click Create-->Notebook in your databricks instance
 * Select language that you want to use, select your cluster and click "Create" to create a notebook
-* Write the code to create dataframe. Below is the scala code to create dataframe from your table
+* Write code to create dataframe. Below scala code is to create dataframe from your table
 ```scala
 val df = sqlContext.sql("select * from <your_table_name>")
 ```
-* Write the code to upload the dataframe as dataset into Salesforce Wave. Below is the scala code for uploading a dataframe into Salesforce Wave
+* Write code to upload the dataframe as dataset into Salesforce Wave. Below scala code is to upload a dataframe into Salesforce Wave
 ```scala
 df.
    write.
