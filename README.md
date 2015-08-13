@@ -67,6 +67,18 @@ df.write().format("com.springml.spark.salesforce")
 		  .save();
 ```
 
+
+### Python API
+Spark 1.4+:
+```python
+from pyspark.sql import SQLContext
+sqlContext = SQLContext(sc)
+
+df = sqlContext.read.format('com.databricks.spark.csv').options(header='true').load("your_csv_location")
+df.write.
+  format('com.springml.spark.salesforce').options(username='your_salesforce_username').options(password='your_salesforce_password_with_secutiry_token').options(datasetName='your_dataset_name').save()
+```
+
 ## Metadata Configuration
 This library constructs [Salesforce Wave Dataset Metadata] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf) using Metadata Configuration present in [resources](https://github.com/springml/spark-salesforce/blob/master/src/main/resources/metadata_config.json). User may modifiy the default behaviour. User can modify already defined datatypes or user may add additional datatypes. For example, user can change the scale to 5 for float datatype
 
@@ -131,6 +143,36 @@ df.
     save()
 
 ```
+
+
+### Using this package in databricks
+
+#### Create Package Library
+* Login into your databricks instance
+* Click Create-->Library and select "Maven Coordinate" as source
+* Click "Search Spark Packages and Maven Central" button
+* Select "spark-salesforce" and click "Create Library" button
+* Library called "spark-salesforce_2.10-1.0.1" will be created
+* Now attach it to the clusters you are working on
+
+#### Upload Databricks table into Salesforce Wave
+* Click Create-->Notebook in your databricks instance
+* Select language that you want to use, select your cluster and click "Create" to create a notebook
+* Write the code to create dataframe from your table. Below is the scala code to create dataframe
+```scala
+val df = sqlContext.sql("select * from <your_table_name>")
+```
+* Write the code to upload the dataframe as dataset into Salesforce Wave. Below is the scala code to upload
+```scala
+df.
+   write.
+   format("com.springml.spark.salesforce").
+   option("username", "your_salesforce_username").
+   option("password", "your_salesforce_password_with_secutiry_token").
+   option("datasetName", "your_dataset_name").
+   save()
+```
+
 
 ### Note
 Salesforce wave does require atleast one "Text" field. So please make sure the dataframe has atleast one string type.
