@@ -174,6 +174,10 @@ df.
 ```
 
 
+#### Short Demo video of using this package in databricks
+[![Spark Salesforce Package Demo](http://i.imgur.com/Ot5DWAW.png)](https://www.youtube.com/watch?v=i6CyOJkG2_Y "Spark Salesforce Package Demo")
+
+
 ### Note
 Salesforce wave does require atleast one "Text" field. So please make sure the dataframe has atleast one string type.
 
