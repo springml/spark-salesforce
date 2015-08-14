@@ -174,7 +174,7 @@ df.
 ```
 
 
-#### Short Demo video of using this package in databricks
+#### Short Demo Video
 [![Spark Salesforce Package Demo](http://i.imgur.com/1W9VYV7.png?1)](https://www.youtube.com/watch?v=i6CyOJkG2_Y "Spark Salesforce Package Demo")
 
 
