@@ -175,7 +175,7 @@ df.
 
 
 #### Short Demo video of using this package in databricks
-[![Spark Salesforce Package Demo](http://i.imgur.com/Ot5DWAW.png)](https://www.youtube.com/watch?v=i6CyOJkG2_Y "Spark Salesforce Package Demo")
+[![Spark Salesforce Package Demo](http://i.imgur.com/1W9VYV7.png?1)](https://www.youtube.com/watch?v=i6CyOJkG2_Y "Spark Salesforce Package Demo")
 
 
 ### Note
