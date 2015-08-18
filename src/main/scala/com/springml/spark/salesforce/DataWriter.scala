@@ -26,11 +26,12 @@ import org.apache.spark.sql.Row
  * Writer responsible for writing the objects into Salesforce Wave
  * It uses Partner External Metadata SOAP API to write the dataset
  */
-class DataWriter (val userName: String, val password: String, val datasetName: String) extends Serializable{
+class DataWriter (val userName: String, val password: String, 
+    val login: String, val version: String, val datasetName: String) extends Serializable{
   @transient val logger = Logger.getLogger(classOf[DefaultSource])
 
   def writeMetadata(metaDataJson: String): Option[String] = {
-    val partnerConnection = createConnection(userName, password)
+    val partnerConnection = createConnection(userName, password, login, version)
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")
     sobj.setField("Format", "Csv")
@@ -71,7 +72,7 @@ class DataWriter (val userName: String, val password: String, val datasetName: S
         sobj.setField("InsightsExternalDataId", metadataId)
         sobj.setField("PartNumber", partNumber)
         
-        val partnerConnection = Utils.createConnection(userName, password)
+        val partnerConnection = Utils.createConnection(userName, password, login, version)
         val results = partnerConnection.create(Array(sobj))
 
         val resultSuccess = results.map(saveResult => {
@@ -92,7 +93,7 @@ class DataWriter (val userName: String, val password: String, val datasetName: S
 
   def commit(id: String): Boolean = {
 
-    val partnerConnection = Utils.createConnection(userName, password)
+    val partnerConnection = Utils.createConnection(userName, password, login, version)
     
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")

@@ -25,13 +25,15 @@ import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import com.springml.spark.salesforce.metadata.MetadataConstructor
+import org.apache.spark.sql.sources.RelationProvider
+import org.apache.spark.sql.sources.SchemaRelationProvider
 
 /**
  * Default source for SalesForce wave data source. It writes any
  * given DF to Salesforce wave repository
  *
  */
-class DefaultSource extends CreatableRelationProvider{
+class DefaultSource extends RelationProvider with SchemaRelationProvider with CreatableRelationProvider {
   @transient val logger = Logger.getLogger(classOf[DefaultSource])
   private def createReturnRelation(data: DataFrame) = {
    
@@ -41,14 +43,36 @@ class DefaultSource extends CreatableRelationProvider{
     }
   }
 
+  /**
+   * Execute the SAQL against Salesforce Wave and construct dataframe with the result
+   */
+  override def createRelation(sqlContext: SQLContext, parameters: Map[String, String]) = {
+    createRelation(sqlContext, parameters, null)
+  }
+
+  /**
+   * 
+   */
+  override def createRelation(sqlContext: SQLContext, parameters: Map[String, String], schema: StructType) = {
+    val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
+    val password = parameters.getOrElse("password", sys.error("'password' must be specified for salesforce."))
+    val query = parameters.getOrElse("saql", sys.error("'saql' must be specified to read from dataset"))
+    val login = parameters.getOrElse("login", "https://login.salesforce.com")
+    val version = parameters.getOrElse("version", "34.0")
+
+    DatasetRelation(username, password, login, version, query, schema, sqlContext)
+  }
+  
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame): BaseRelation = {
 
     val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
     val password = parameters.getOrElse("password", sys.error("'password' must be specified for salesforce."))
     val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for salesforce."))
+    val login = parameters.getOrElse("login", "https://login.salesforce.com")
+    val version = parameters.getOrElse("version", "34.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
     
-    val dataWriter = new DataWriter(username, password, datasetName)
+    val dataWriter = new DataWriter(username, password, login, version, datasetName)
 
     val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
     val metaDataJson = MetadataConstructor.generateMetaString(data.schema, datasetName, metadataConfig)

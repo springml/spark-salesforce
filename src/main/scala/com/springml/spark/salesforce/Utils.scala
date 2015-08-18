@@ -36,12 +36,14 @@ import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
  */
 object Utils extends Serializable {
 
-  def createConnection(username:String,password:String):PartnerConnection = {
+  def createConnection(username: String, password: String, 
+      login: String, version: String):PartnerConnection = {
     val config = new ConnectorConfig()
     config.setUsername(username)
     config.setPassword(password)
-    config.setAuthEndpoint("https://login.salesforce.com/services/Soap/u/34.0")
-    config.setServiceEndpoint("https://login.salesforce.com/services/Soap/u/34.0")
+    val endpoint = if (login.endsWith("/")) (login + "services/Soap/u/" + version) else (login + "/services/Soap/u/" + version);
+    config.setAuthEndpoint(endpoint)
+    config.setServiceEndpoint(endpoint)
     Connector.newConnection(config)
   }
 
