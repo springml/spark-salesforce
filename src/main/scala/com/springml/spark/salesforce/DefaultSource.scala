@@ -27,6 +27,7 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import com.springml.spark.salesforce.metadata.MetadataConstructor
 import org.apache.spark.sql.sources.RelationProvider
 import org.apache.spark.sql.sources.SchemaRelationProvider
+import com.springml.salesforce.wave.api.APIFactory
 
 /**
  * Default source for SalesForce wave data source. It writes any
@@ -36,7 +37,7 @@ import org.apache.spark.sql.sources.SchemaRelationProvider
 class DefaultSource extends RelationProvider with SchemaRelationProvider with CreatableRelationProvider {
   @transient val logger = Logger.getLogger(classOf[DefaultSource])
   private def createReturnRelation(data: DataFrame) = {
-   
+
     new BaseRelation {
       override def sqlContext: SQLContext = data.sqlContext
       override def schema: StructType = data.schema
@@ -51,7 +52,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
   }
 
   /**
-   * 
+   *
    */
   override def createRelation(sqlContext: SQLContext, parameters: Map[String, String], schema: StructType) = {
     val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
@@ -60,9 +61,11 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "34.0")
 
-    DatasetRelation(username, password, login, version, query, schema, sqlContext)
+    val waveAPI = APIFactory.getInstance.waveAPI(username, password, query)
+
+    DatasetRelation(waveAPI, query, schema, sqlContext)
   }
-  
+
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame): BaseRelation = {
 
     val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
@@ -71,7 +74,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "34.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
-    
+
     val dataWriter = new DataWriter(username, password, login, version, datasetName)
 
     val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
