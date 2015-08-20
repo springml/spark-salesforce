@@ -1,7 +1,6 @@
 package com.springml.spark.salesforce.metadata
 
-import scala.collection.mutable.Map
-import org.apache.spark.sql.types.{StructType, StringType, IntegerType, LongType, 
+import org.apache.spark.sql.types.{StructType, StringType, IntegerType, LongType,
   FloatType, DateType, TimestampType, BooleanType, StructField}
 import org.scalatest.FunSuite
 import com.springml.spark.salesforce.Utils
@@ -18,7 +17,7 @@ class TestMetadataConstructor extends FunSuite {
     assert(schemaString.length > 0)
     assert(schemaString.contains("sampleDataSet"))
   }
-    
+
   test("Test Metadata generation With Custom MetadataConfig") {
     val columnNames = List("c1", "c2", "c3", "c4")
     val intField = StructField("intCol", IntegerType, true)
@@ -27,11 +26,11 @@ class TestMetadataConstructor extends FunSuite {
     val dateField = StructField("dateCol", DateType, true)
     val timestampField = StructField("timestampCol", TimestampType, true)
     val stringField = StructField("stringCol", StringType, true)
-    val someTypeField = StructField("someTypeCol", BooleanType, true) 
-    
+    val someTypeField = StructField("someTypeCol", BooleanType, true)
+
     val columnStruct = Array[StructField] (intField, longField, floatField, dateField, timestampField, stringField, someTypeField)
-    
-    val schema = StructType(columnStruct) 
+
+    val schema = StructType(columnStruct)
 
     var metadataConfig = Map("string" -> Map("wave_type" -> "Text"))
     metadataConfig += ("integer" -> Map("wave_type" -> "Numeric", "precision" -> "10", "scale" -> "0", "defaultValue" -> "100"))
