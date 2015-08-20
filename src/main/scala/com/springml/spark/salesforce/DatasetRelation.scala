@@ -78,7 +78,7 @@ case class DatasetRelation(
     var rowIndex: Int = 0
     for (row <- records) {
       val fieldArray = new Array[Any](schemaFields.length)
-      logger.info("Total Fields length : " + schemaFields.length)
+      logger.debug("Total Fields length : " + schemaFields.length)
       var fieldIndex: Int = 0
       for (fields <- schemaFields) {
         val fieldValue = row(fields.name)

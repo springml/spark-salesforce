@@ -61,7 +61,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "34.0")
 
-    val waveAPI = APIFactory.getInstance.waveAPI(username, password, query)
+    val waveAPI = APIFactory.getInstance.waveAPI(username, password, login)
 
     DatasetRelation(waveAPI, query, schema, sqlContext)
   }
