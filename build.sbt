@@ -9,8 +9,8 @@ scalaVersion := "2.10.4"
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "34.0.0",
   "com.force.api" % "force-partner-api" % "34.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.0-SNAPSHOT",
-  "org.mockito" % "mockito-all" % "2.0.2-beta"
+  "com.springml" % "salesforce-wave-api" % "1.0.0",
+  "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
 
@@ -26,7 +26,6 @@ resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositor
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
-libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.3.5"
 
 // Spark Package Details (sbt-spark-package)
 spName := "springml/spark-salesforce"
