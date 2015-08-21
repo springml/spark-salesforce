@@ -1,19 +1,18 @@
 package com.springml.spark.salesforce.metadata
 
-import scala.collection.mutable.{Map}
 import org.apache.spark.sql.types.{StructType, StructField}
 
 /**
  * Utility to construct Metadata
  */
 object MetadataConstructor {
-    
+
   private def fieldJson(field: StructField, datasetName: String, dataTypeMap: Map[String, Map[String, String]]) = {
     val fieldName = field.name
     val qualifiedName = datasetName + "." + fieldName
     val sfDataType = field.dataType.typeName
     val sfTypeJson = typeJson(sfDataType, dataTypeMap)
-    
+
     s"""{
      "description": "",
       "fullyQualifiedName": "$qualifiedName",
@@ -27,8 +26,8 @@ object MetadataConstructor {
   }
 
   private def typeJson(dfDataType: String, dataTypeMap: Map[String, Map[String, String]]):String = {
-    // For date, it is not possible to get the Format. 
-    // So it is considered as String. 
+    // For date, it is not possible to get the Format.
+    // So it is considered as String.
     // User may update the metadata in Salesforce wave
     val someSFDataType = dataTypeMap.get(dfDataType)
     var sfDataType = Map ("wave_type" -> "Text")
@@ -43,16 +42,16 @@ object MetadataConstructor {
     val scale = sfDataType.get("scale")
     val format = sfDataType.get("format")
     val default = sfDataType.get("defaultValue")
-    
+
     if (precision.isDefined) {
       val precisionVal = precision.get
       typeJson += ",\n"
       typeJson += s""""precision": $precisionVal"""
-      
+
       var defaultValue = "0"
       if (default.isDefined) {
         defaultValue = default.get
-      }  
+      }
       typeJson += ",\n"
       typeJson += s""""defaultValue": $defaultValue"""
 
@@ -62,8 +61,8 @@ object MetadataConstructor {
       }
       typeJson += ",\n"
       typeJson += s""""scale": $scaleVal"""
-    } 
-    
+    }
+
     if (format.isDefined) {
       val formatVal = format.get
       typeJson += ",\n"
@@ -72,7 +71,7 @@ object MetadataConstructor {
 
     typeJson
   }
-  
+
   def generateMetaString(schema: StructType, datasetName: String, dataTypeMap: Map[String, Map[String, String]]):String = {
     val beginJsonString =
       s"""

@@ -30,14 +30,14 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
     sparkConf = new SparkConf().setMaster("local").setAppName("data repartition")
     sc = new SparkContext(sparkConf)
   }
-     
+
   override def afterEach() {
     sc.stop()
   }
-   
+
   test("Test Metadata Configuration") {
     val metadataConfig = Utils.metadataConfig(null)
-    
+
     assert(metadataConfig.size == 7)
     val integerConfig = metadataConfig.get("integer")
     assert(integerConfig.isDefined == true)
@@ -46,11 +46,11 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
     assert(timestampConfig.isDefined == true)
     assert(timestampConfig.get.get("format").isDefined == true)
   }
-  
+
   test("Test Custom Metadata Configuration") {
     val customTimestampConfig = """{"timestamp":{"wave_type":"Date","format":"yyyy/MM/dd'T'HH:mm:ss"}}"""
     val metadataConfig = Utils.metadataConfig(Some(customTimestampConfig))
-    
+
     assert(metadataConfig.size == 7)
     val timestampConfig = metadataConfig.get("timestamp")
     assert(timestampConfig.isDefined == true)
@@ -61,7 +61,7 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
   test("Test Custom Metadata Configuration with new datatype") {
     val customTimestampConfig = """{"mydataType":{"wave_type":"Date","format":"yy-MM-dd"}}"""
     val metadataConfig = Utils.metadataConfig(Some(customTimestampConfig))
-    
+
     assert(metadataConfig.size == 8)
     val myDataTypeConfig = metadataConfig.get("mydataType")
     assert(myDataTypeConfig.isDefined == true)
