@@ -13,6 +13,7 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
+parallelExecution in Test := false
 
 resolvers += Resolver.url("artifactory", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
 

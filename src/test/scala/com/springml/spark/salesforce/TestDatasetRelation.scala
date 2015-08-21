@@ -16,7 +16,7 @@ import org.apache.spark.sql.{ SQLContext, Row}
 /**
  * Test DatasetRelation with schema and without schema
  */
-class TestDatasetRelation extends FunSuite with BeforeAndAfterEach with MockitoSugar {
+class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfterEach {
   val waveAPI = mock[WaveAPI]
   val saql = "q = load \"0FbB000000007qmKAA/0FcB00000000LgTKAU\"; q = group q by ('event', 'device_type'); q = foreach q generate 'event' as 'event',  'device_type' as 'device_type', count() as 'count'; q = limit q 2000;";
   val qr = testQR()
@@ -25,9 +25,9 @@ class TestDatasetRelation extends FunSuite with BeforeAndAfterEach with MockitoS
   var sc: SparkContext = _
 
   override def beforeEach() {
+    when(waveAPI.query(saql)).thenReturn(qr)
     sparkConf = new SparkConf().setMaster("local").setAppName("Test Dataset Relation")
     sc = new SparkContext(sparkConf)
-    when(waveAPI.query(saql)).thenReturn(qr)
   }
 
   override def afterEach() {
@@ -60,11 +60,12 @@ class TestDatasetRelation extends FunSuite with BeforeAndAfterEach with MockitoS
     assert(actualRecord.mkString.contains("12Android"))
   }
 
-/*  test ("test read without schema") {
+  test ("test read without schema") {
     val sqlContext = new SQLContext(sc)
     val dr = DatasetRelation(waveAPI, saql, null, sqlContext)
     val rdd = dr.buildScan()
     validate(rdd)
+    sc.stop()
   }
 
   test ("test read with schema") {
@@ -78,5 +79,6 @@ class TestDatasetRelation extends FunSuite with BeforeAndAfterEach with MockitoS
     val dr = DatasetRelation(waveAPI, saql, schema, sqlContext)
     val rdd = dr.buildScan()
     validate(rdd)
-  }*/
+    sc.stop()
+  }
 }
