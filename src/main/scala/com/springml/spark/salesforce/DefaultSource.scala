@@ -57,13 +57,27 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
   override def createRelation(sqlContext: SQLContext, parameters: Map[String, String], schema: StructType) = {
     val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
     val password = parameters.getOrElse("password", sys.error("'password' must be specified for salesforce."))
-    val query = parameters.getOrElse("saql", sys.error("'saql' must be specified to read from dataset"))
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "34.0")
+    val saql = parameters.get("saql")
+    val soql = parameters.get("soql")
 
-    val waveAPI = APIFactory.getInstance.waveAPI(username, password, login)
+    if ((saql.isDefined && soql.isDefined)) {
+      sys.error("Anyone 'saql' or 'soql' have to be specified for creating dataframe")
+    }
 
-    DatasetRelation(waveAPI, query, schema, sqlContext)
+    if ((!saql.isDefined && !soql.isDefined)) {
+      sys.error("Either 'saql' or 'soql' have to be specified for creating dataframe")
+    }
+
+    if (saql.isDefined) {
+      val waveAPI = APIFactory.getInstance.waveAPI(username, password, login)
+      DatasetRelation(waveAPI, null, saql.get, schema, sqlContext)
+    } else {
+      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login)
+      DatasetRelation(null, forceAPI, soql.get, schema, sqlContext)
+    }
+
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame): BaseRelation = {

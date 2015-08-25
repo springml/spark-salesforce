@@ -62,7 +62,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test read without schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(waveAPI, saql, null, sqlContext)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -76,7 +76,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val fields = Array[StructField] (countField, deviceTypeField)
     val schema = StructType(fields)
 
-    val dr = DatasetRelation(waveAPI, saql, schema, sqlContext)
+    val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()

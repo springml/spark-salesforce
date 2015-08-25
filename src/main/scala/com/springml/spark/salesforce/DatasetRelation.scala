@@ -13,12 +13,14 @@ import org.apache.spark.sql.types.{ StructField, StringType, ByteType, ShortType
 import org.apache.spark.sql.types.{ LongType, DataType, FloatType, DoubleType, BooleanType }
 import org.apache.spark.sql.types.{ DecimalType, TimestampType, DateType, StructType}
 import com.springml.salesforce.wave.api.WaveAPI
+import com.springml.salesforce.wave.api.ForceAPI
 
 /**
  * Relation class for reading data from Salesforce and construct RDD
  */
 case class DatasetRelation(
     waveAPI: WaveAPI,
+    forceAPI: ForceAPI,
     query: String,
     userSchema: StructType,
     sqlContext: SQLContext) extends BaseRelation with TableScan {
@@ -28,9 +30,17 @@ case class DatasetRelation(
   val records = read()
 
   def read(): java.util.List[java.util.Map[String, String]] = {
+    var records: java.util.List[java.util.Map[String, String]]= null;
     // Query getting executed here
-    val resultSet = waveAPI.query(query)
-    resultSet.getResults.getRecords
+    if (waveAPI != null) {
+      val resultSet = waveAPI.query(query)
+      records = resultSet.getResults.getRecords
+    } else if (forceAPI != null) {
+      val resultSet = forceAPI.query(query)
+      records = resultSet.filterRecords()
+    }
+
+    records
   }
 
   private def cast(fieldValue: String, toType: DataType, nullable: Boolean = true): Any = {

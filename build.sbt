@@ -9,7 +9,7 @@ scalaVersion := "2.10.4"
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "34.0.0",
   "com.force.api" % "force-partner-api" % "34.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.0",
+  "com.springml" % "salesforce-wave-api" % "1.0.1-SNAPSHOT",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
