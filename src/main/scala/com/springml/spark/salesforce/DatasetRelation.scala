@@ -36,8 +36,13 @@ case class DatasetRelation(
       val resultSet = waveAPI.query(query)
       records = resultSet.getResults.getRecords
     } else if (forceAPI != null) {
-      val resultSet = forceAPI.query(query)
+      var resultSet = forceAPI.query(query)
       records = resultSet.filterRecords()
+
+      while(!resultSet.isDone()) {
+        resultSet = forceAPI.queryMore(resultSet)
+        records.addAll(resultSet.filterRecords())
+      }
     }
 
     records

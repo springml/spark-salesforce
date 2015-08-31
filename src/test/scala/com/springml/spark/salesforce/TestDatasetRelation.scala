@@ -12,20 +12,26 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{ StructField, IntegerType, StructType, StringType}
 import org.apache.spark.{ SparkConf, SparkContext}
 import org.apache.spark.sql.{ SQLContext, Row}
+import com.springml.salesforce.wave.api.ForceAPI
+import com.springml.salesforce.wave.model.SOQLResult
 
 /**
  * Test DatasetRelation with schema and without schema
  */
 class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfterEach {
   val waveAPI = mock[WaveAPI]
+  val forceAPI = mock[ForceAPI]
   val saql = "q = load \"0FbB000000007qmKAA/0FcB00000000LgTKAU\"; q = group q by ('event', 'device_type'); q = foreach q generate 'event' as 'event',  'device_type' as 'device_type', count() as 'count'; q = limit q 2000;";
+  val soql = "SELECT AccountId, Id, ProposalID__c FROM Opportunity where ProposalID__c != null";
   val qr = testQR()
+  val soqlQR = testSOQLQR()
 
   var sparkConf: SparkConf = _
   var sc: SparkContext = _
 
   override def beforeEach() {
     when(waveAPI.query(saql)).thenReturn(qr)
+    when(forceAPI.query(soql)).thenReturn(soqlQR);
     sparkConf = new SparkConf().setMaster("local").setAppName("Test Dataset Relation")
     sc = new SparkContext(sparkConf)
   }
@@ -48,6 +54,19 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     qr.setQuery(saql);
 
     qr
+  }
+
+  private def testSOQLQR() : SOQLResult = {
+    val results = new SOQLResult
+    results.setDone(true)
+    val records: java.util.List[java.util.Map[String, Object]] = new ArrayList[java.util.Map[String, Object]]
+    val record: java.util.Map[String, Object] = new HashMap[String, Object]
+    record.put("count", "12")
+    record.put("device_type", "Android")
+    records.add(record)
+    results.setRecords(records)
+
+    results
   }
 
   private def validate(rdd: RDD[Row]) {
@@ -77,6 +96,28 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val schema = StructType(fields)
 
     val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext)
+    val rdd = dr.buildScan()
+    validate(rdd)
+    sc.stop()
+  }
+
+  test ("test read using soql without schema") {
+    val sqlContext = new SQLContext(sc)
+    val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext)
+    val rdd = dr.buildScan()
+    validate(rdd)
+    sc.stop()
+  }
+
+  test ("test read using soql with schema") {
+    val sqlContext = new SQLContext(sc)
+    val countField = StructField("count", IntegerType, true)
+    val deviceTypeField = StructField("device_type", StringType, true)
+
+    val fields = Array[StructField] (countField, deviceTypeField)
+    val schema = StructType(fields)
+
+    val dr = DatasetRelation(null, forceAPI, soql, schema, sqlContext)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()

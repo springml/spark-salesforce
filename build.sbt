@@ -6,10 +6,12 @@ organization := "com.springml"
 
 scalaVersion := "2.10.4"
 
+resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "34.0.0",
   "com.force.api" % "force-partner-api" % "34.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.1-SNAPSHOT",
+  "com.springml" % "salesforce-wave-api" % "1.0.1",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
@@ -21,9 +23,9 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 
 resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"
 
-resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
-
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+
+resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
