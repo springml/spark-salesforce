@@ -21,25 +21,28 @@ import com.springml.spark.salesforce.Utils._
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.SaveMode
 
 /**
  * Writer responsible for writing the objects into Salesforce Wave
  * It uses Partner External Metadata SOAP API to write the dataset
  */
-class DataWriter (val userName: String, val password: String, 
+class DataWriter (val userName: String, val password: String,
     val login: String, val version: String, val datasetName: String) extends Serializable{
   @transient val logger = Logger.getLogger(classOf[DefaultSource])
 
-  def writeMetadata(metaDataJson: String): Option[String] = {
+  def writeMetadata(metaDataJson: String, mode: SaveMode): Option[String] = {
     val partnerConnection = createConnection(userName, password, login, version)
+    val oper = operation(mode)
+
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")
     sobj.setField("Format", "Csv")
     sobj.setField("EdgemartAlias", datasetName)
     sobj.setField("MetadataJson", metaDataJson.getBytes)
-    sobj.setField("Operation", "Overwrite")
+    sobj.setField("Operation", oper)
     sobj.setField("Action", "None")
-  
+
     val results = partnerConnection.create(Array(sobj))
     results.map(saveResult => {
       if (saveResult.isSuccess) {
@@ -58,7 +61,7 @@ class DataWriter (val userName: String, val password: String,
     }).head
   }
 
-  def writeData(rdd: RDD[Row],metadataId:String): Boolean = {
+  def writeData(rdd: RDD[Row], metadataId: String): Boolean = {
     val csvRDD = rdd.map(row => row.toSeq.map(value => value.toString).mkString(","))
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
@@ -66,12 +69,12 @@ class DataWriter (val userName: String, val password: String,
         val partNumber = index + 1
         val data = "\n" + iterator.toArray.mkString("\n")
         val sobj = new SObject()
-    
+
         sobj.setType("InsightsExternalDataPart")
         sobj.setField("DataFile", data.getBytes)
         sobj.setField("InsightsExternalDataId", metadataId)
         sobj.setField("PartNumber", partNumber)
-        
+
         val partnerConnection = Utils.createConnection(userName, password, login, version)
         val results = partnerConnection.create(Array(sobj))
 
@@ -94,7 +97,7 @@ class DataWriter (val userName: String, val password: String,
   def commit(id: String): Boolean = {
 
     val partnerConnection = Utils.createConnection(userName, password, login, version)
-    
+
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")
     sobj.setField("Action", "Process")
@@ -114,4 +117,14 @@ class DataWriter (val userName: String, val password: String,
   }
 
 
+  private def operation(mode: SaveMode): String = {
+    if (SaveMode.Overwrite.equals(mode)) {
+      "Overwrite"
+    } else if (SaveMode.Append.equals(mode)) {
+      "Append"
+    } else {
+      logger.warn("SaveMode " + mode + " Not supported. Using SaveMode.Append")
+      "Append"
+    }
+  }
 }

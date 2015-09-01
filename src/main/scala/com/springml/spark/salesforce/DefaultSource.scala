@@ -96,7 +96,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     logger.info(s"Metadata for dataset $datasetName is $metaDataJson")
     logger.info("Uploading metadata for dataset " + datasetName)
 
-    val writtenId = dataWriter.writeMetadata(metaDataJson)
+    val writtenId = dataWriter.writeMetadata(metaDataJson, mode)
     if (!writtenId.isDefined) {
       sys.error("Unable to write metadata for dataset " + datasetName)
     }

@@ -9,7 +9,7 @@ scalaVersion := "2.10.4"
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
-  "com.force.api" % "force-wsc" % "34.0.0",
+  "com.force.api" % "force-wsc" % "34.2.2",
   "com.force.api" % "force-partner-api" % "34.0.0",
   "com.springml" % "salesforce-wave-api" % "1.0.1",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
@@ -52,7 +52,7 @@ spDescription := """Spark Salesforce Wave Connector
                     | - Constructs Salesforce Wave dataset's metadata using schema present in dataframe
                     | - Can use custom metadata for constructing Salesforce Wave dataset's metadata""".stripMargin
 
-licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
+// licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
