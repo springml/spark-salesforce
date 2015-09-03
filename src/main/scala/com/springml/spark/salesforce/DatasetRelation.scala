@@ -1,19 +1,35 @@
 package com.springml.spark.salesforce
 
 import java.math.BigDecimal
-import java.sql.{ Timestamp, Date }
-import scala.collection.JavaConversions._
+import java.sql.Date
+import java.sql.Timestamp
+
+import scala.collection.JavaConversions.asScalaBuffer
+import scala.collection.JavaConversions.mapAsScalaMap
+
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.sources.{ BaseRelation, TableScan}
-import org.apache.spark.sql.{ Row, SQLContext}
-import com.springml.salesforce.wave.api.APIFactory
-import org.apache.spark.sql.types.{ StructField, StringType, ByteType, ShortType, IntegerType }
-import org.apache.spark.sql.types.{ LongType, DataType, FloatType, DoubleType, BooleanType }
-import org.apache.spark.sql.types.{ DecimalType, TimestampType, DateType, StructType}
-import com.springml.salesforce.wave.api.WaveAPI
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.TableScan
+import org.apache.spark.sql.types.BooleanType
+import org.apache.spark.sql.types.ByteType
+import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.DateType
+import org.apache.spark.sql.types.DecimalType
+import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.types.FloatType
+import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.types.LongType
+import org.apache.spark.sql.types.ShortType
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.TimestampType
+
 import com.springml.salesforce.wave.api.ForceAPI
+import com.springml.salesforce.wave.api.WaveAPI
 
 /**
  * Relation class for reading data from Salesforce and construct RDD
@@ -96,9 +112,9 @@ case class DatasetRelation(
       logger.debug("Total Fields length : " + schemaFields.length)
       var fieldIndex: Int = 0
       for (fields <- schemaFields) {
-        val fieldValue = row(fields.name)
-        logger.debug("fieldValue " + fieldValue)
-        fieldArray(fieldIndex) = cast(fieldValue, fields.dataType, fields.nullable)
+        val value = fieldValue(row, fields.name)
+        logger.debug("fieldValue " + value)
+        fieldArray(fieldIndex) = cast(value, fields.dataType, fields.nullable)
         fieldIndex = fieldIndex + 1
       }
 
@@ -109,4 +125,12 @@ case class DatasetRelation(
     sqlContext.sparkContext.parallelize(rowArray)
   }
 
+  private def fieldValue(row: java.util.Map[String, String], name: String) : String = {
+    if (row.contains(name)) {
+      row(name)
+    } else {
+      logger.warn("Value not found for " + name)
+      ""
+    }
+  }
 }
