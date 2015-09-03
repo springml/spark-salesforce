@@ -55,8 +55,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
    *
    */
   override def createRelation(sqlContext: SQLContext, parameters: Map[String, String], schema: StructType) = {
-    val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
-    val password = parameters.getOrElse("password", sys.error("'password' must be specified for salesforce."))
+    val username = param(parameters, "SF_USERNAME", "username")
+    val password = param(parameters, "SF_PASSWORD", "password")
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "34.0")
     val saql = parameters.get("saql")
@@ -82,8 +82,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, parameters: Map[String, String], data: DataFrame): BaseRelation = {
 
-    val username = parameters.getOrElse("username", sys.error("'username' must be specified for salesforce."))
-    val password = parameters.getOrElse("password", sys.error("'password' must be specified for salesforce."))
+    val username = param(parameters, "SF_USERNAME", "username")
+    val password = param(parameters, "SF_PASSWORD", "password")
     val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for salesforce."))
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "34.0")
@@ -127,4 +127,13 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     return createReturnRelation(data)
   }
 
+  private def param(parameters: Map[String, String], envName: String, paramName: String) : String = {
+    val envProp = sys.env.get(envName);
+    if (envProp != null && envProp.isDefined) {
+      return envProp.get
+    }
+
+    parameters.getOrElse(paramName,
+        sys.error(s"""Either '$envName' has to be added in environment or '$paramName' must be specified for salesforce package."""));
+  }
 }
