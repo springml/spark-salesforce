@@ -91,13 +91,27 @@ object Utils extends Serializable {
   def rowSize(rows: Array[Row]) : Long = {
       var sizeOfRows = 0l
       for (row <- rows) {
-      //for (i <- 0 until rows.length) {
-        val rowSize = SizeEstimator.estimate(row.toSeq.map { value => value.toString() }.mkString(","))
         // Converting to bytes
+        val rowSize = SizeEstimator.estimate(row.toSeq.map { value => rowValue(value) }.mkString(","))
         sizeOfRows += rowSize
       }
 
       sizeOfRows
+  }
+
+  def rowValue(rowVal: Any) : String = {
+    if (rowVal == null) {
+      ""
+    } else {
+      var value = rowVal.toString()
+      if (value.contains("\"")) {
+        value = value.replaceAll("\"", "\"\"")
+      }
+      if (value.contains("\"") || value.contains("\n") || value.contains(",")) {
+        value = "\"" + value + "\""
+      }
+      value
+    }
   }
 
   def metadataConfig(usersMetadataConfig: Option[String]) = {

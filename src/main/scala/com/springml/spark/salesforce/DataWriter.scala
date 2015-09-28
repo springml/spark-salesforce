@@ -62,7 +62,7 @@ class DataWriter (val userName: String, val password: String,
   }
 
   def writeData(rdd: RDD[Row], metadataId: String): Boolean = {
-    val csvRDD = rdd.map(row => row.toSeq.map(value => value.toString).mkString(","))
+    val csvRDD = rdd.map(row => row.toSeq.map(value => Utils.rowValue(value)).mkString(","))
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
         @transient val logger = Logger.getLogger(classOf[DataWriter])
