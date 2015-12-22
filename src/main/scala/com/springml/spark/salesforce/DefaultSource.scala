@@ -58,7 +58,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val username = param(parameters, "SF_USERNAME", "username")
     val password = param(parameters, "SF_PASSWORD", "password")
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
-    val version = parameters.getOrElse("version", "34.0")
+    val version = parameters.getOrElse("version", "35.0")
     val saql = parameters.get("saql")
     val soql = parameters.get("soql")
 
@@ -71,10 +71,10 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     }
 
     if (saql.isDefined) {
-      val waveAPI = APIFactory.getInstance.waveAPI(username, password, login)
+      val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext)
     } else {
-      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login)
+      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login, version)
       DatasetRelation(null, forceAPI, soql.get, schema, sqlContext)
     }
 
@@ -86,7 +86,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val password = param(parameters, "SF_PASSWORD", "password")
     val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for salesforce."))
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
-    val version = parameters.getOrElse("version", "34.0")
+    val version = parameters.getOrElse("version", "35.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
 
     val dataWriter = new DataWriter(username, password, login, version, datasetName)
