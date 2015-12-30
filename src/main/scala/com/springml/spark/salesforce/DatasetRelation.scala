@@ -39,7 +39,9 @@ case class DatasetRelation(
     forceAPI: ForceAPI,
     query: String,
     userSchema: StructType,
-    sqlContext: SQLContext) extends BaseRelation with TableScan {
+    sqlContext: SQLContext,
+    resultVariable: Option[String],
+    pageSize: Int) extends BaseRelation with TableScan {
 
   private val logger = Logger.getLogger(classOf[DatasetRelation])
 
@@ -49,19 +51,45 @@ case class DatasetRelation(
     var records: java.util.List[java.util.Map[String, String]]= null;
     // Query getting executed here
     if (waveAPI != null) {
+      records = queryWave()
+    } else if (forceAPI != null) {
+      records = querySF()
+    }
+
+    records
+  }
+
+  private def queryWave(): java.util.List[java.util.Map[String, String]] = {
+    var records: java.util.List[java.util.Map[String, String]]= null;
+
+    if (resultVariable == null || !resultVariable.isDefined) {
       val resultSet = waveAPI.query(query)
       records = resultSet.getResults.getRecords
-    } else if (forceAPI != null) {
-      var resultSet = forceAPI.query(query)
-      records = resultSet.filterRecords()
+    } else {
+      var resultSet = waveAPI.queryWithPagination(query, resultVariable.get, pageSize)
+      records = resultSet.getResults.getRecords
 
-      while(!resultSet.isDone()) {
-        resultSet = forceAPI.queryMore(resultSet)
-        records.addAll(resultSet.filterRecords())
+      while (!resultSet.isDone()) {
+        resultSet = waveAPI.queryMore(resultSet)
+        records.addAll(resultSet.getResults.getRecords)
       }
     }
 
     records
+  }
+
+  private def querySF(): java.util.List[java.util.Map[String, String]] = {
+      var records: java.util.List[java.util.Map[String, String]]= null;
+
+      var resultSet = forceAPI.query(query)
+      records = resultSet.filterRecords()
+
+      while (!resultSet.isDone()) {
+        resultSet = forceAPI.queryMore(resultSet)
+        records.addAll(resultSet.filterRecords())
+      }
+
+      return records
   }
 
   private def cast(fieldValue: String, toType: DataType, nullable: Boolean = true): Any = {

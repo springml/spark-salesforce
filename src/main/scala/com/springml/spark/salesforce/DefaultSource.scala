@@ -61,6 +61,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val version = parameters.getOrElse("version", "35.0")
     val saql = parameters.get("saql")
     val soql = parameters.get("soql")
+    val resultVariable = parameters.get("resultVariable")
+    val pageSize = parameters.getOrElse[String]("pageSize", "2000")
 
     if ((saql.isDefined && soql.isDefined)) {
       sys.error("Anyone 'saql' or 'soql' have to be specified for creating dataframe")
@@ -72,10 +74,10 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
 
     if (saql.isDefined) {
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
-      DatasetRelation(waveAPI, null, saql.get, schema, sqlContext)
+      DatasetRelation(waveAPI, null, saql.get, schema, sqlContext, resultVariable, pageSize.toInt)
     } else {
       val forceAPI = APIFactory.getInstance.forceAPI(username, password, login, version)
-      DatasetRelation(null, forceAPI, soql.get, schema, sqlContext)
+      DatasetRelation(null, forceAPI, soql.get, schema, sqlContext, null, 0)
     }
 
   }

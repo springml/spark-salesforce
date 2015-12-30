@@ -1,6 +1,6 @@
 name := "spark-salesforce"
 
-version := "1.0.2"
+version := "1.0.3"
 
 organization := "com.springml"
 
@@ -11,7 +11,7 @@ resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositor
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "34.2.2",
   "com.force.api" % "force-partner-api" % "34.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.2",
+  "com.springml" % "salesforce-wave-api" % "1.0.3",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
