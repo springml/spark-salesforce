@@ -62,7 +62,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val saql = parameters.get("saql")
     val soql = parameters.get("soql")
     val resultVariable = parameters.get("resultVariable")
-    val pageSize = parameters.getOrElse[String]("pageSize", "2000")
+    val pageSize = parameters.getOrElse("pageSize", "2000")
+    val inferSchema = parameters.getOrElse("inferSchema", "false")
 
     if ((saql.isDefined && soql.isDefined)) {
       sys.error("Anyone 'saql' or 'soql' have to be specified for creating dataframe")
@@ -72,12 +73,22 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       sys.error("Either 'saql' or 'soql' have to be specified for creating dataframe")
     }
 
+    val inferSchemaFlag = if (inferSchema == "false") {
+      false
+    } else if (inferSchema == "true") {
+      true
+    } else {
+      sys.error("inferSchema flag can only be true or false")
+    }
+
     if (saql.isDefined) {
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
-      DatasetRelation(waveAPI, null, saql.get, schema, sqlContext, resultVariable, pageSize.toInt)
+      DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
+          resultVariable, pageSize.toInt, inferSchemaFlag)
     } else {
       val forceAPI = APIFactory.getInstance.forceAPI(username, password, login, version)
-      DatasetRelation(null, forceAPI, soql.get, schema, sqlContext, null, 0)
+      DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
+          null, 0, inferSchemaFlag)
     }
 
   }

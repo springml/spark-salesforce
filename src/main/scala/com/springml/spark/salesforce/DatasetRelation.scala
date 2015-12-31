@@ -41,7 +41,8 @@ case class DatasetRelation(
     userSchema: StructType,
     sqlContext: SQLContext,
     resultVariable: Option[String],
-    pageSize: Int) extends BaseRelation with TableScan {
+    pageSize: Int,
+    inferSchema: Boolean) extends BaseRelation with TableScan {
 
   private val logger = Logger.getLogger(classOf[DatasetRelation])
 
@@ -113,9 +114,54 @@ case class DatasetRelation(
     }
   }
 
+  private def sampleRDD: RDD[Array[String]] = {
+    // Defaulting sample values to 10
+    val NO_OF_SAMPLE_ROWS = 10;
+    // If the record is less than 10, then the whole data is used as sample
+    val sampleSize = if (records.size() < NO_OF_SAMPLE_ROWS) {
+      records.size()
+    } else {
+      NO_OF_SAMPLE_ROWS
+    }
+
+    logger.debug("Sample Size : " + sampleSize)
+    // Constructing RDD from records
+    val sampleRowArray = new Array[Array[String]](sampleSize)
+    for (i <- 0 to sampleSize - 1) {
+      val row = records(i);
+      logger.debug("rows size : " + row.size())
+      val fieldArray = new Array[String](row.size())
+
+      var fieldIndex: Int = 0
+      for (column <- row) {
+        fieldArray(fieldIndex) = column._2
+        fieldIndex = fieldIndex + 1
+      }
+
+      sampleRowArray(i) = fieldArray
+    }
+
+    // Converting the Array into RDD
+    sqlContext.sparkContext.parallelize(sampleRowArray)
+  }
+
+  private def header: Array[String] = {
+    val firstRow = records.iterator().next()
+    val header = new Array[String](firstRow.size())
+    var index: Int = 0
+    for (column <- firstRow) {
+      header(index) = column._1
+      index = index + 1
+    }
+
+    header
+  }
+
   override def schema: StructType = {
     if (userSchema != null) {
       userSchema
+    } else if (inferSchema) {
+      InferSchema(sampleRDD, header)
     } else {
       // Construct the schema with all fields as String
       val firstRow = records.iterator().next()

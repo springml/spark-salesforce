@@ -111,7 +111,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test read without schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, false)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -125,7 +125,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val fields = Array[StructField] (countField, deviceTypeField)
     val schema = StructType(fields)
 
-    val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext, null, 0)
+    val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext, null, 0, false)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -135,7 +135,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val sqlContext = new SQLContext(sc)
     var resultVariable = None: Option[String]
     resultVariable = Some("q")
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, resultVariable, 2)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, resultVariable, 2, false)
     val rdd = dr.buildScan()
     assert(rdd != null)
     // 2 - During initial read
@@ -146,7 +146,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test read using soql without schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext, null, 0)
+    val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext, null, 0, false)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -160,9 +160,26 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val fields = Array[StructField] (countField, deviceTypeField)
     val schema = StructType(fields)
 
-    val dr = DatasetRelation(null, forceAPI, soql, schema, sqlContext, null, 0)
+    val dr = DatasetRelation(null, forceAPI, soql, schema, sqlContext, null, 0, false)
     val rdd = dr.buildScan()
     validate(rdd)
+    sc.stop()
+  }
+
+  test ("test infer schema") {
+    val sqlContext = new SQLContext(sc)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, true)
+
+    val inferedSchema = dr.schema
+    print("inferedSchema  : " + inferedSchema)
+    val countField = inferedSchema.apply("count")
+    print("Count field Data Type " + countField.dataType)
+    assert(IntegerType == countField.dataType)
+
+    val deviceTypeField = inferedSchema.apply("device_type")
+    print("Device Type field Data Type " + deviceTypeField.dataType)
+    assert(StringType == deviceTypeField.dataType)
+
     sc.stop()
   }
 }
