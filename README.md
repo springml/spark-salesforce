@@ -1,6 +1,6 @@
-# Spark Salesforce Wave Library
+# Spark Salesforce Library
 
-A library for uploading dataframes into Salesforce Wave.
+A library for connecting Spark with Salesforce and Salesforce Wave.
 
 ## Requirements
 
@@ -14,25 +14,40 @@ You can link against this library in your program at the following ways:
 <dependency>
     <groupId>com.springml</groupId>
     <artifactId>spark-salesforce-wave_2.10</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.4</version>
 </dependency>
 ```
 
+### SBT Dependency
+```
+libraryDependencies += "com.springml" % "spark-salesforce_2.10" % "1.0.4"
+```
 
 ## Using with Spark shell
 This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
 
 ```
-$ bin/spark-shell --packages com.springml:spark-salesforce-wave_2.10:1.0.0
+$ bin/spark-shell --packages com.springml:spark-salesforce-wave_2.10:1.0.4
 ```
 
 ## Features
-This package can be used to create dataset in Salesforce Wave from [Spark DataFrames](https://spark.apache.org/docs/1.3.0/sql-programming-guide.html) to [Salesforce Wave](http://www.salesforce.com/in/analytics-cloud/overview/).
-This library requires following options:
-* `username`: Salesforce Wave Username. This user should have privilege to upload datasets
+* **Dataset Creation** - Create dataset in Salesforce Wave from [Spark DataFrames](http://spark.apache.org/docs/latest/sql-programming-guide.html) to [Salesforce Wave](http://www.salesforce.com/in/analytics-cloud/overview/)
+* **Read Salesforce Wave Dataset** User has to provide SAQL to read data from Salesforce Wave. The query will be constructed as dataframe
+* **Read Salesforce Object** User has to provide SOQL to read data from Salesforce object. The query result will be constructed as dataframe
+
+### Options
+* `username`: Salesforce Wave Username. This user should have privilege to upload datasets or execute SAQL or execute SOQL  
 * `password`: Salesforce Wave Password. Please append security token along with password.For example, if a user’s password is mypassword, and the security token is XXXXXXXXXX, the user must provide mypasswordXXXXXXXXXX
-* `datasetName`: Name of the dataset to be created in Salesforce Wave
-* `metadataConfig`: (Optional) Metadata configuration which will be used to construct [Salesforce Wave Dataset Metadata] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf). Metadata configuration has to be provided in JSON format.
+* `login`: (Optional) Salesforce Login URL. Default value https://login.salesforce.com
+* `datasetName`: (Optional) Name of the dataset to be created in Salesforce Wave. Required for Dataset Creation
+* `metadataConfig`: (Optional) Metadata configuration which will be used to construct [Salesforce Wave Dataset Metadata] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf). Metadata configuration has to be provided in JSON format
+* `saql`: (Optional) SAQL query to used to query Salesforce Wave. Mandatory for reading Salesforce Wave dataset
+* `soql`: (Optional) SOQL query to used to query Salesforce Object. Mandatory for reading Salesforce Object like Opportunity
+* `version`: (Optional) Salesforce API Version. Default 35.0
+* `inferSchema`: (Optional) Inferschema from the query results. Sample rows will be taken to find the datatype
+* `resultVariable`: (Optional) result variable used in SAQL query. To paginate SAQL queries this package will add the required offset and limit. For example, in this SAQL query `q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';` **q** is the result variable
+* `pageSize`: (Optional) Page size for each query to be executed against Salesforce Wave. Default value is 2000. This option can only be used if `resultVariable` is set
+
 
 
 ### Scala API
