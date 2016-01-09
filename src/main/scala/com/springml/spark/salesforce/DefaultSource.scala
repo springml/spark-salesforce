@@ -30,9 +30,10 @@ import org.apache.spark.sql.sources.SchemaRelationProvider
 import com.springml.salesforce.wave.api.APIFactory
 
 /**
- * Default source for SalesForce wave data source. It writes any
- * given DF to Salesforce wave repository
- *
+ * Default source for Salesforce wave data source.
+ * It can write given DF to Salesforce wave repository
+ * It can read Salesforce wave data source using provided SAQL and construct dataframe
+ * It can read Salesforce objects using provided SOQL and construct dataframe
  */
 class DefaultSource extends RelationProvider with SchemaRelationProvider with CreatableRelationProvider {
   @transient val logger = Logger.getLogger(classOf[DefaultSource])
