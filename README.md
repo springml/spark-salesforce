@@ -55,6 +55,7 @@ Spark 1.4+:
 ```scala
 import org.apache.spark.sql.SQLContext
 
+// Writing Dataset
 val sqlContext = new SQLContext(sc)
 // Using spark-csv package to load dataframes
 val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load("your_csv_location")
@@ -65,6 +66,28 @@ df.
    option("password", "your_salesforce_password_with_secutiry_token").
    option("datasetName", "your_dataset_name").
    save()
+
+// Reading Dataset
+val saql = "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
+val sfWaveDF = sqlContext.
+          read.
+          format("com.springml.spark.salesforce").
+          option("username", "your_salesforce_username").
+          option("password", "your_salesforce_password_with_secutiry_token").
+          option("saql", saql)
+          option("inferSchema", "true").
+          load()
+
+// Reading Salesforce Object
+val soql = "select id, name, amount from opportunity"
+val sfDF = sqlContext.
+          read.
+          format("com.springml.spark.salesforce").
+          option("username", "your_salesforce_username").
+          option("password", "your_salesforce_password_with_secutiry_token").
+          option("soql", soql).
+          option("version", "35.0").
+          load()
 ```
 
 
@@ -74,12 +97,54 @@ Spark 1.4+:
 import org.apache.spark.sql.SQLContext
 
 SQLContext sqlContext = new SQLContext(sc);
+
+// Writing Dataset
 DataFrame df = sqlContext.read().format("com.databricks.spark.csv").option("header", "true").load("your_csv_location");
 df.write().format("com.springml.spark.salesforce")
 		  .option("username", "your_salesforce_username")
 		  .option("password", "your_salesforce_password_with_secutiry_token")
 		  .option("datasetName", "your_dataset_name")
 		  .save();
+
+// Reading Dataset
+String saql = "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
+DataFrame sfWaveDF = sqlContext.
+          read().
+          format("com.springml.spark.salesforce").
+          option("username", "your_salesforce_username").
+          option("password", "your_salesforce_password_with_secutiry_token").
+          option("saql", saql)
+          option("inferSchema", "true").
+          load()
+
+// Reading Salesforce Object
+String soql = "select id, name, amount from opportunity"
+DataFrame sfDF = sqlContext.
+          read.
+          format("com.springml.spark.salesforce").
+          option("username", "your_salesforce_username").
+          option("password", "your_salesforce_password_with_secutiry_token").
+          option("soql", soql).
+          option("version", "35.0").
+          load()      
+```
+
+
+### R API
+Spark 1.4+:
+```r
+# Writing Dataset
+df <- read.df(sqlContext, "your_csv_location", source = "com.databricks.spark.csv", inferSchema = "true")
+write.df(df, path="", source='com.springml.spark.salesforce', mode="append", datasetName="your_dataset_name", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token")
+
+# Reading Dataset
+saql <- "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
+sfWaveDF <- read.df(sqlContext, source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, saql=saql)
+
+# Reading Salesforce Object
+soql <- "select id, name, amount from opportunity"
+dfDF <- read.df(sqlContext, source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, soql=soql)
+
 ```
 
 
