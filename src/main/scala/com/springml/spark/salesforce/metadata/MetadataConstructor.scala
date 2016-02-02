@@ -42,6 +42,7 @@ object MetadataConstructor {
     val scale = sfDataType.get("scale")
     val format = sfDataType.get("format")
     val default = sfDataType.get("defaultValue")
+    val canTruncateValue = sfDataType.get("canTruncateValue")
 
     if (precision.isDefined) {
       val precisionVal = precision.get
@@ -67,6 +68,12 @@ object MetadataConstructor {
       val formatVal = format.get
       typeJson += ",\n"
       typeJson += s""""format": "$formatVal""""
+    }
+
+    if (canTruncateValue.isDefined) {
+      val canTruncateValueVal = canTruncateValue.get
+      typeJson += ",\n"
+      typeJson += s""""canTruncateValueVal": "$canTruncateValueVal""""
     }
 
     typeJson
