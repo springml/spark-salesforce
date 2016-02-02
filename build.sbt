@@ -1,6 +1,6 @@
 name := "spark-salesforce"
 
-version := "1.0.4"
+version := "1.0.5"
 
 organization := "com.springml"
 
@@ -11,7 +11,7 @@ resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositor
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "34.2.2",
   "com.force.api" % "force-partner-api" % "34.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.3",
+  "com.springml" % "salesforce-wave-api" % "1.0.4",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
@@ -29,15 +29,16 @@ resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
+libraryDependencies += "com.databricks" %% "spark-csv" % "1.3.0"
 
 // Spark Package Details (sbt-spark-package)
 spName := "springml/spark-salesforce"
 
 spAppendScalaVersion := true
 
-spDependencies += "databricks/spark-csv:1.0.3"
+// spDependencies += "databricks/spark-csv:1.3.0"
 
-sparkVersion := "1.4.0"
+sparkVersion := "1.6.0"
 
 sparkComponents += "sql"
 
