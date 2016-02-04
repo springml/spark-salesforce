@@ -59,6 +59,9 @@ object MetadataConstructor {
       var scaleVal = "0"
       if (scale.isDefined) {
         scaleVal = scale.get
+        if (scaleVal.toInt > 6) {
+          sys.error("Salesforce Wave does not support scale beyond 6. Please re-run with scale <= 6")
+        }
       }
       typeJson += ",\n"
       typeJson += s""""scale": $scaleVal"""
