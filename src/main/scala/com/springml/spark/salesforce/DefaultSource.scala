@@ -87,7 +87,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
           resultVariable, pageSize.toInt, inferSchemaFlag)
     } else {
-      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login, version)
+      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login, version, Integer.getInteger(pageSize))
       DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
           null, 0, inferSchemaFlag)
     }
