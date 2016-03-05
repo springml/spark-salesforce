@@ -27,8 +27,14 @@ import org.apache.spark.sql.SaveMode
  * Writer responsible for writing the objects into Salesforce Wave
  * It uses Partner External Metadata SOAP API to write the dataset
  */
-class DataWriter (val userName: String, val password: String,
-    val login: String, val version: String, val datasetName: String) extends Serializable{
+class DataWriter (
+    val userName: String,
+    val password: String,
+    val login: String,
+    val version: String,
+    val datasetName: String,
+    val appName: String
+    ) extends Serializable{
   @transient val logger = Logger.getLogger(classOf[DefaultSource])
 
   def writeMetadata(metaDataJson: String, mode: SaveMode): Option[String] = {
@@ -38,6 +44,10 @@ class DataWriter (val userName: String, val password: String,
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")
     sobj.setField("Format", "Csv")
+    logger.info("appName : " + appName)
+    if (appName != null) {
+      sobj.setField("EdgemartContainer", appName)
+    }
     sobj.setField("EdgemartAlias", datasetName)
     sobj.setField("MetadataJson", metaDataJson.getBytes)
     sobj.setField("Operation", oper)

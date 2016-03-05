@@ -99,12 +99,12 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val username = param(parameters, "SF_USERNAME", "username")
     val password = param(parameters, "SF_PASSWORD", "password")
     val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for salesforce."))
-    val folderName = parameters.get("folderName")
+    val appName = parameters.getOrElse("appName", null)
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "35.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
 
-    val dataWriter = new DataWriter(username, password, login, version, datasetName)
+    val dataWriter = new DataWriter(username, password, login, version, datasetName, appName)
 
     val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
     val metaDataJson = MetadataConstructor.generateMetaString(data.schema, datasetName, metadataConfig)
