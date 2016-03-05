@@ -64,6 +64,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val soql = parameters.get("soql")
     val resultVariable = parameters.get("resultVariable")
     val pageSize = parameters.getOrElse("pageSize", "1000")
+    val maxRetry = parameters.getOrElse("maxRetry", "5")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
 
     if ((saql.isDefined && soql.isDefined)) {
@@ -87,7 +88,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
           resultVariable, pageSize.toInt, inferSchemaFlag)
     } else {
-      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login, version, Integer.getInteger(pageSize))
+      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
+          version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
       DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
           null, 0, inferSchemaFlag)
     }
