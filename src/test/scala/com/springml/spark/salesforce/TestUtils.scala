@@ -38,20 +38,23 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
   test("Test Metadata Configuration") {
     val metadataConfig = Utils.metadataConfig(null)
 
-    assert(metadataConfig.size == 7)
+    assert(metadataConfig.size == 8)
     val integerConfig = metadataConfig.get("integer")
     assert(integerConfig.isDefined == true)
     assert(integerConfig.get.get("precision").isDefined == true)
     val timestampConfig = metadataConfig.get("timestamp")
     assert(timestampConfig.isDefined == true)
     assert(timestampConfig.get.get("format").isDefined == true)
+    val doubleConfig = metadataConfig.get("double")
+    assert(doubleConfig.isDefined == true)
+    assert(doubleConfig.get.get("precision").isDefined == true)
   }
 
   test("Test Custom Metadata Configuration") {
     val customTimestampConfig = """{"timestamp":{"wave_type":"Date","format":"yyyy/MM/dd'T'HH:mm:ss"}}"""
     val metadataConfig = Utils.metadataConfig(Some(customTimestampConfig))
 
-    assert(metadataConfig.size == 7)
+    assert(metadataConfig.size == 8)
     val timestampConfig = metadataConfig.get("timestamp")
     assert(timestampConfig.isDefined == true)
     assert(timestampConfig.get.get("format").isDefined == true)
@@ -62,7 +65,7 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
     val customTimestampConfig = """{"mydataType":{"wave_type":"Date","format":"yy-MM-dd"}}"""
     val metadataConfig = Utils.metadataConfig(Some(customTimestampConfig))
 
-    assert(metadataConfig.size == 8)
+    assert(metadataConfig.size == 9)
     val myDataTypeConfig = metadataConfig.get("mydataType")
     assert(myDataTypeConfig.isDefined == true)
     assert(myDataTypeConfig.get.get("format").isDefined == true)

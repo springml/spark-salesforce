@@ -63,7 +63,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val saql = parameters.get("saql")
     val soql = parameters.get("soql")
     val resultVariable = parameters.get("resultVariable")
-    val pageSize = parameters.getOrElse("pageSize", "2000")
+    val pageSize = parameters.getOrElse("pageSize", "1000")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
 
     if ((saql.isDefined && soql.isDefined)) {
@@ -99,6 +99,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val username = param(parameters, "SF_USERNAME", "username")
     val password = param(parameters, "SF_PASSWORD", "password")
     val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for salesforce."))
+    val folderName = parameters.get("folderName")
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "35.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
