@@ -28,6 +28,7 @@ import com.springml.spark.salesforce.metadata.MetadataConstructor
 import org.apache.spark.sql.sources.RelationProvider
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import com.springml.salesforce.wave.api.APIFactory
+import org.apache.spark.sql.DataFrame
 
 /**
  * Default source for Salesforce wave data source.
@@ -59,7 +60,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val username = param(parameters, "SF_USERNAME", "username")
     val password = param(parameters, "SF_PASSWORD", "password")
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
-    val version = parameters.getOrElse("version", "35.0")
+    val version = parameters.getOrElse("version", "36.0")
     val saql = parameters.get("saql")
     val soql = parameters.get("soql")
     val resultVariable = parameters.get("resultVariable")
@@ -67,13 +68,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val maxRetry = parameters.getOrElse("maxRetry", "5")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
 
-    if ((saql.isDefined && soql.isDefined)) {
-      sys.error("Anyone 'saql' or 'soql' have to be specified for creating dataframe")
-    }
-
-    if ((!saql.isDefined && !soql.isDefined)) {
-      sys.error("Either 'saql' or 'soql' have to be specified for creating dataframe")
-    }
+    validateMutualExclusive(saql, soql, "saql", "soql")
 
     val inferSchemaFlag = if (inferSchema == "false") {
       false
@@ -100,12 +95,63 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
 
     val username = param(parameters, "SF_USERNAME", "username")
     val password = param(parameters, "SF_PASSWORD", "password")
-    val datasetName = parameters.getOrElse("datasetName", sys.error("'datasetName' must be specified for salesforce."))
+    val datasetName = parameters.get("datasetName")
+    val sfObject = parameters.get("sfObject")
     val appName = parameters.getOrElse("appName", null)
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
-    val version = parameters.getOrElse("version", "35.0")
+    val version = parameters.getOrElse("version", "36.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
 
+    validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
+
+    if (datasetName.isDefined) {
+      logger.info("Writing dataframe into Salesforce Wave")
+      writeInSalesforceWave(username, password, login, version,
+          datasetName.get, appName, usersMetadataConfig, mode, data)
+    } else {
+      logger.info("Updating Salesforce Object")
+      logger.info("Ignoring SaveMode as existing rows will be updated " + mode)
+      updateSalesforceObject(username, password, login, version, sfObject.get, data)
+    }
+
+    return createReturnRelation(data)
+  }
+
+  private def updateSalesforceObject(
+      username: String,
+      password: String,
+      login: String,
+      version: String,
+      sfObject: String,
+      data: DataFrame) {
+
+    val csvHeader = Utils.csvHeadder(data.schema);
+    logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
+    logger.info("Repartitioning rdd for 10mb partitions")
+    val repartitionedRDD = Utils.repartition(data.rdd)
+    logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
+
+    val bulkAPI = APIFactory.getInstance.bulkAPI(username, password, login, version)
+    val writer = new SFObjectWriter(username, password, login, version, sfObject, csvHeader)
+    logger.info("Writing data")
+    val successfulWrite = writer.writeData(repartitionedRDD)
+    logger.info(s"Writing data was successful was $successfulWrite")
+    if (!successfulWrite) {
+      sys.error("Unable to update salesforce object")
+    }
+
+  }
+
+  private def writeInSalesforceWave(
+      username: String,
+      password: String,
+      login: String,
+      version: String,
+      datasetName: String,
+      appName: String,
+      usersMetadataConfig: Option[String],
+      mode: SaveMode,
+      data: DataFrame) {
     val dataWriter = new DataWriter(username, password, login, version, datasetName, appName)
 
     val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
@@ -141,7 +187,17 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     logger.info(s"Successfully written data for dataset $datasetName ")
     println(s"Successfully written data for dataset $datasetName ")
 
-    return createReturnRelation(data)
+  }
+
+  private def validateMutualExclusive(opt1: Option[String], opt2: Option[String],
+      opt1Name: String, opt2Name: String) {
+    if ((opt1.isDefined && opt2.isDefined)) {
+      sys.error(s"""Anyone '$opt1Name' or '$opt2Name' have to be specified for creating dataframe""")
+    }
+
+    if ((!opt1.isDefined && !opt2.isDefined)) {
+      sys.error(s"""Either '$opt1Name' or '$opt2Name' have to be specified for creating dataframe""")
+    }
   }
 
   private def param(parameters: Map[String, String], envName: String, paramName: String) : String = {

@@ -34,8 +34,8 @@ class DataWriter (
     val version: String,
     val datasetName: String,
     val appName: String
-    ) extends Serializable{
-  @transient val logger = Logger.getLogger(classOf[DefaultSource])
+    ) extends Serializable {
+  @transient val logger = Logger.getLogger(classOf[DataWriter])
 
   def writeMetadata(metaDataJson: String, mode: SaveMode): Option[String] = {
     val partnerConnection = createConnection(userName, password, login, version)

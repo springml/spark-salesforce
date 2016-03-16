@@ -124,6 +124,10 @@ object Utils extends Serializable {
     systemMetadataConfig
   }
 
+  def csvHeadder(schema: StructType) : String = {
+    schema.fields.map(field => field.name).mkString(",")
+  }
+
   private def readMetadataConfig() : Map[String, Map[String, String]]= {
     val source = Source.fromURL(getClass.getResource("/metadata_config.json"))
     val jsonContent = try source.mkString finally source.close()
@@ -136,4 +140,5 @@ object Utils extends Serializable {
     val resMap: Map[String, Map[String, String]] = result.get.asInstanceOf[Map[String, Map[String, String]]]
     resMap
   }
+
 }

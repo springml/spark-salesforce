@@ -8,7 +8,8 @@ import com.springml.spark.salesforce.Utils
 /**
  */
 class TestMetadataConstructor extends FunSuite {
-    test("Test Metadata generation") {
+
+  test("Test Metadata generation") {
     val columnNames = List("c1", "c2", "c3", "c4")
     val columnStruct = columnNames.map(colName => StructField(colName, StringType, true))
     val schema = StructType(columnStruct)

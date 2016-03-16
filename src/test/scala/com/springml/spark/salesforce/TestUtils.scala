@@ -17,10 +17,9 @@ package com.springml.spark.salesforce
 
 import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.sql.types.{StructType, StringType, StructField}
-import org.scalatest.FunSuite
-import org.apache.spark.SparkConf
-import org.scalatest.BeforeAndAfterEach
+import org.apache.spark.sql.types.{StructType, StructField}
+import org.apache.spark.sql.types.{StringType, IntegerType, LongType, FloatType, DateType}
+import org.scalatest.{FunSuite, BeforeAndAfterEach}
 
 class TestUtils extends FunSuite with BeforeAndAfterEach {
   var sparkConf: SparkConf = _
@@ -120,6 +119,21 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
     val repartitionDF = Utils.repartition(csvDF.rdd)
     assert(repartitionDF.partitions.length == 2)
     sc.stop
+  }
+
+  test("Check whether CSV Header constructed properly") {
+    val intField = StructField("c1", IntegerType, true)
+    val longField = StructField("c2", LongType, true)
+    val floatField = StructField("c3", FloatType, true)
+    val dateField = StructField("c4", DateType, true)
+    val stringField = StructField("c5", StringType, true)
+
+    val columnStruct = Array[StructField] (intField, longField, floatField, dateField, stringField)
+    val schema = StructType(columnStruct)
+
+    val expected = "c1,c2,c3,c4,c5"
+    val actual = Utils.csvHeadder(schema)
+    assert(expected.equals(actual))
   }
 
 }
