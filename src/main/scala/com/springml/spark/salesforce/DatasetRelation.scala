@@ -3,10 +3,8 @@ package com.springml.spark.salesforce
 import java.math.BigDecimal
 import java.sql.Date
 import java.sql.Timestamp
-
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.mapAsScalaMap
-
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
@@ -27,9 +25,9 @@ import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.types.TimestampType
-
 import com.springml.salesforce.wave.api.ForceAPI
 import com.springml.salesforce.wave.api.WaveAPI
+import java.net.URLEncoder
 
 /**
  * Relation class for reading data from Salesforce and construct RDD
@@ -42,6 +40,7 @@ case class DatasetRelation(
     sqlContext: SQLContext,
     resultVariable: Option[String],
     pageSize: Int,
+    encodeFields: Option[String],
     inferSchema: Boolean) extends BaseRelation with TableScan {
 
   private val logger = Logger.getLogger(classOf[DatasetRelation])
@@ -93,7 +92,8 @@ case class DatasetRelation(
       return records
   }
 
-  private def cast(fieldValue: String, toType: DataType, nullable: Boolean = true): Any = {
+  private def cast(fieldValue: String, toType: DataType,
+      nullable: Boolean = true, fieldName: String): Any = {
     if (fieldValue == "" && nullable && !toType.isInstanceOf[StringType]) {
       null
     } else {
@@ -108,10 +108,27 @@ case class DatasetRelation(
         case _: DecimalType => new BigDecimal(fieldValue.replaceAll(",", ""))
         case _: TimestampType => Timestamp.valueOf(fieldValue)
         case _: DateType => Date.valueOf(fieldValue)
-        case _: StringType => fieldValue
+        case _: StringType => encode(fieldValue, fieldName)
         case _ => throw new RuntimeException(s"Unsupported data type: ${toType.typeName}")
       }
     }
+  }
+
+  private def encode(value: String, fieldName: String): String = {
+    if (shouldEncode(fieldName)) {
+      URLEncoder.encode(value, "UTF-8")
+    } else {
+      value
+    }
+  }
+
+  private def shouldEncode(fieldName: String) : Boolean = {
+    if (encodeFields != null && encodeFields.isDefined) {
+      val toBeEncodedField = encodeFields.get.split(",")
+      return toBeEncodedField.contains(fieldName)
+    }
+
+    false
   }
 
   private def sampleRDD: RDD[Array[String]] = {
@@ -188,7 +205,7 @@ case class DatasetRelation(
       for (fields <- schemaFields) {
         val value = fieldValue(row, fields.name)
         logger.debug("fieldValue " + value)
-        fieldArray(fieldIndex) = cast(value, fields.dataType, fields.nullable)
+        fieldArray(fieldIndex) = cast(value, fields.dataType, fields.nullable, fields.name)
         fieldIndex = fieldIndex + 1
       }
 

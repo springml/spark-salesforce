@@ -67,26 +67,22 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val pageSize = parameters.getOrElse("pageSize", "1000")
     val maxRetry = parameters.getOrElse("maxRetry", "5")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
+    // This is only needed for Spark version 1.5.2 or lower
+    // Special characters in older version of spark is not handled properly
+    val encodeFields = parameters.get("encodeFields")
 
     validateMutualExclusive(saql, soql, "saql", "soql")
-
-    val inferSchemaFlag = if (inferSchema == "false") {
-      false
-    } else if (inferSchema == "true") {
-      true
-    } else {
-      sys.error("inferSchema flag can only be true or false")
-    }
+    val inferSchemaFlag = flag(inferSchema, "inferSchema");
 
     if (saql.isDefined) {
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
-          resultVariable, pageSize.toInt, inferSchemaFlag)
+          resultVariable, pageSize.toInt, encodeFields, inferSchemaFlag)
     } else {
       val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
       DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
-          null, 0, inferSchemaFlag)
+          null, 0, encodeFields, inferSchemaFlag)
     }
 
   }
@@ -168,11 +164,11 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
     logger.info("Repartitioning rdd for 10mb partitions")
     val repartitionedRDD = Utils.repartition(data.rdd)
-    logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
+    logger.debug("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
     logger.info("Writing data")
     val successfulWrite = dataWriter.writeData(repartitionedRDD, writtenId.get)
-    logger.info(s"Writing data was successful was $successfulWrite")
+    logger.info(s"Written data successfully? $successfulWrite")
     if (!successfulWrite) {
       sys.error("Unable to write data for " + datasetName)
     }
@@ -208,5 +204,15 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
 
     parameters.getOrElse(paramName,
         sys.error(s"""Either '$envName' has to be added in environment or '$paramName' must be specified for salesforce package."""));
+  }
+
+  private def flag(paramValue: String, paramName: String) : Boolean = {
+    if (paramValue == "false") {
+      false
+    } else if (paramValue == "true") {
+      true
+    } else {
+      sys.error(s"""'$paramName' flag can only be true or false""")
+    }
   }
 }

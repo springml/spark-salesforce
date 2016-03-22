@@ -31,7 +31,7 @@ import scala.collection.immutable.HashMap
  * Utility to construct metadata and repartition RDD
  */
 object Utils extends Serializable {
-  @transient val logger = Logger.getLogger(classOf[DefaultSource])
+  @transient val logger = Logger.getLogger("Utils")
 
   def createConnection(username: String, password: String,
       login: String, version: String):PartnerConnection = {
