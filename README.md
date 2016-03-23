@@ -34,7 +34,7 @@ $ bin/spark-shell --packages com.springml:spark-salesforce-wave_2.10:1.0.6
 * **Dataset Creation** - Create dataset in [Salesforce Wave](http://www.salesforce.com/in/analytics-cloud/overview/) Wave from [Spark DataFrames](http://spark.apache.org/docs/latest/sql-programming-guide.html)
 * **Read Salesforce Wave Dataset** - User has to provide SAQL to read data from Salesforce Wave. The query result will be constructed as dataframe
 * **Read Salesforce Object** - User has to provide SOQL to read data from Salesforce object. The query result will be constructed as dataframe
-* **Update Salesforce Object** - Based on the input dataframe, Salesforce object will be updated
+* **Update Salesforce Object** - Salesforce object will be updated with the details present in dataframe
 
 ### Options
 * `username`: Salesforce Wave Username. This user should have privilege to upload datasets or execute SAQL or execute SOQL  
@@ -60,7 +60,11 @@ import org.apache.spark.sql.SQLContext
 // Writing Dataset
 val sqlContext = new SQLContext(sc)
 // Using spark-csv package to load dataframes
-val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load("your_csv_location")
+val df = sqlContext.
+                read.
+                format("com.databricks.spark.csv").
+                option("header", "true").
+                load("your_csv_location")
 df.
    write.
    format("com.springml.spark.salesforce").
@@ -72,24 +76,24 @@ df.
 // Reading Dataset
 val saql = "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
 val sfWaveDF = sqlContext.
-          read.
-          format("com.springml.spark.salesforce").
-          option("username", "your_salesforce_username").
-          option("password", "your_salesforce_password_with_secutiry_token").
-          option("saql", saql)
-          option("inferSchema", "true").
-          load()
+                read.
+                format("com.springml.spark.salesforce").
+                option("username", "your_salesforce_username").
+                option("password", "your_salesforce_password_with_secutiry_token").
+                option("saql", saql)
+                option("inferSchema", "true").
+                load()
 
 // Reading Salesforce Object
 val soql = "select id, name, amount from opportunity"
 val sfDF = sqlContext.
-          read.
-          format("com.springml.spark.salesforce").
-          option("username", "your_salesforce_username").
-          option("password", "your_salesforce_password_with_secutiry_token").
-          option("soql", soql).
-          option("version", "35.0").
-          load()
+                read.
+                format("com.springml.spark.salesforce").
+                option("username", "your_salesforce_username").
+                option("password", "your_salesforce_password_with_secutiry_token").
+                option("soql", soql).
+                option("version", "35.0").
+                load()
 
 // Update Salesforce Object
 // CSV should contain Id column followed other fields to be Updated
@@ -97,7 +101,11 @@ val sfDF = sqlContext.
 // Id,Description
 // 003B00000067Rnx,Superman
 // 003B00000067Rnw,SpiderMan
-val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load("your_csv_location")
+val df = sqlContext.
+                read.
+                format("com.databricks.spark.csv").
+                option("header", "true").
+                load("your_csv_location")
 df.
    write.
    format("com.springml.spark.salesforce").
@@ -117,8 +125,13 @@ import org.apache.spark.sql.SQLContext
 SQLContext sqlContext = new SQLContext(sc);
 
 // Writing Dataset
-DataFrame df = sqlContext.read().format("com.databricks.spark.csv").option("header", "true").load("your_csv_location");
-df.write().format("com.springml.spark.salesforce")
+DataFrame df = sqlContext
+                    .read()
+                    .format("com.databricks.spark.csv")
+                    .option("header", "true")
+                    .load("your_csv_location");
+df.write()
+      .format("com.springml.spark.salesforce")
 		  .option("username", "your_salesforce_username")
 		  .option("password", "your_salesforce_password_with_secutiry_token")
 		  .option("datasetName", "your_dataset_name")
@@ -152,7 +165,11 @@ DataFrame sfDF = sqlContext.
 // Id,Description
 // 003B00000067Rnx,Superman
 // 003B00000067Rnw,SpiderMan
-DataFrame df = sqlContext.read().format("com.databricks.spark.csv").option("header", "true").load("your_csv_location");
+DataFrame df = sqlContext
+                    .read()
+                    .format("com.databricks.spark.csv")
+                    .option("header", "true")
+                    .load("your_csv_location");
 df.write().format("com.springml.spark.salesforce")
       .option("username", "your_salesforce_username")
       .option("password", "your_salesforce_password_with_secutiry_token")
