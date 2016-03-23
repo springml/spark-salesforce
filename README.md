@@ -14,32 +14,34 @@ You can link against this library in your program at the following ways:
 <dependency>
     <groupId>com.springml</groupId>
     <artifactId>spark-salesforce-wave_2.10</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.6</version>
 </dependency>
 ```
 
 ### SBT Dependency
 ```
-libraryDependencies += "com.springml" % "spark-salesforce_2.10" % "1.0.4"
+libraryDependencies += "com.springml" % "spark-salesforce_2.10" % "1.0.6"
 ```
 
 ## Using with Spark shell
 This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
 
 ```
-$ bin/spark-shell --packages com.springml:spark-salesforce-wave_2.10:1.0.4
+$ bin/spark-shell --packages com.springml:spark-salesforce-wave_2.10:1.0.6
 ```
 
 ## Features
 * **Dataset Creation** - Create dataset in [Salesforce Wave](http://www.salesforce.com/in/analytics-cloud/overview/) Wave from [Spark DataFrames](http://spark.apache.org/docs/latest/sql-programming-guide.html)
 * **Read Salesforce Wave Dataset** - User has to provide SAQL to read data from Salesforce Wave. The query result will be constructed as dataframe
 * **Read Salesforce Object** - User has to provide SOQL to read data from Salesforce object. The query result will be constructed as dataframe
+* **Update Salesforce Object** - Based on the input dataframe, Salesforce object will be updated
 
 ### Options
 * `username`: Salesforce Wave Username. This user should have privilege to upload datasets or execute SAQL or execute SOQL  
 * `password`: Salesforce Wave Password. Please append security token along with password.For example, if a user’s password is mypassword, and the security token is XXXXXXXXXX, the user must provide mypasswordXXXXXXXXXX
 * `login`: (Optional) Salesforce Login URL. Default value https://login.salesforce.com
 * `datasetName`: (Optional) Name of the dataset to be created in Salesforce Wave. Required for Dataset Creation
+* `sfObject`: (Optional) Salesforce Object to be updated. (e.g.) Contact
 * `metadataConfig`: (Optional) Metadata configuration which will be used to construct [Salesforce Wave Dataset Metadata] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf). Metadata configuration has to be provided in JSON format
 * `saql`: (Optional) SAQL query to used to query Salesforce Wave. Mandatory for reading Salesforce Wave dataset
 * `soql`: (Optional) SOQL query to used to query Salesforce Object. Mandatory for reading Salesforce Object like Opportunity
@@ -88,6 +90,22 @@ val sfDF = sqlContext.
           option("soql", soql).
           option("version", "35.0").
           load()
+
+// Update Salesforce Object
+// CSV should contain Id column followed other fields to be Updated
+// Sample - 
+// Id,Description
+// 003B00000067Rnx,Superman
+// 003B00000067Rnw,SpiderMan
+val df = sqlContext.read.format("com.databricks.spark.csv").option("header", "true").load("your_csv_location")
+df.
+   write.
+   format("com.springml.spark.salesforce").
+   option("username", "your_salesforce_username").
+   option("password", "your_salesforce_password_with_secutiry_token").
+   option("sfObject", "Contact").
+   save()
+
 ```
 
 
@@ -127,6 +145,20 @@ DataFrame sfDF = sqlContext.
           option("soql", soql).
           option("version", "35.0").
           load()      
+
+// Update Salesforce Object
+// CSV should contain Id column followed other fields to be Updated
+// Sample - 
+// Id,Description
+// 003B00000067Rnx,Superman
+// 003B00000067Rnw,SpiderMan
+DataFrame df = sqlContext.read().format("com.databricks.spark.csv").option("header", "true").load("your_csv_location");
+df.write().format("com.springml.spark.salesforce")
+      .option("username", "your_salesforce_username")
+      .option("password", "your_salesforce_password_with_secutiry_token")
+      .option("sfObject", "Contact")
+      .save();
+
 ```
 
 
@@ -144,6 +176,15 @@ sfWaveDF <- read.df(sqlContext, source="com.springml.spark.salesforce", username
 # Reading Salesforce Object
 soql <- "select id, name, amount from opportunity"
 dfDF <- read.df(sqlContext, source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, soql=soql)
+
+# Update Salesforce Object
+# CSV should contain Id column followed other fields to be Updated
+# Sample - 
+# Id,Description
+# 003B00000067Rnx,Superman
+# 003B00000067Rnw,SpiderMan
+df <- read.df(sqlContext, "your_csv_location", source = "com.databricks.spark.csv", header = "true")
+write.df(df, path="", source='com.springml.spark.salesforce', mode="append", sfObject="Contacct", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token")
 
 ```
 
