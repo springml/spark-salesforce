@@ -128,9 +128,9 @@ class DataWriter (
 
 
   private def operation(mode: SaveMode): String = {
-    if (SaveMode.Overwrite.equals(mode)) {
+    if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
       "Overwrite"
-    } else if (SaveMode.Append.equals(mode)) {
+    } else if (mode != null && SaveMode.Append.name().equalsIgnoreCase(mode.name())) {
       "Append"
     } else {
       logger.warn("SaveMode " + mode + " Not supported. Using SaveMode.Append")
