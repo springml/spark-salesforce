@@ -26,6 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
 import scala.collection.immutable.HashMap
+import com.springml.spark.salesforce.metadata.MetadataConstructor
 
 /**
  * Utility to construct metadata and repartition RDD
@@ -126,6 +127,22 @@ object Utils extends Serializable {
 
   def csvHeadder(schema: StructType) : String = {
     schema.fields.map(field => field.name).mkString(",")
+  }
+
+  def metadata(
+      metadataFile: Option[String],
+      usersMetadataConfig: Option[String],
+      schema: StructType,
+      datasetName: String) : String = {
+
+    if (metadataFile != null && metadataFile.isDefined) {
+      val source = Source.fromFile(metadataFile.get)
+      try source.mkString finally source.close()
+    } else {
+      val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
+      val metaDataJson = MetadataConstructor.generateMetaString(schema, datasetName, metadataConfig)
+      metaDataJson
+    }
   }
 
   private def readMetadataConfig() : Map[String, Map[String, String]]= {

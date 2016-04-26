@@ -37,9 +37,11 @@ class DataWriter (
     ) extends Serializable {
   @transient val logger = Logger.getLogger(classOf[DataWriter])
 
-  def writeMetadata(metaDataJson: String, mode: SaveMode): Option[String] = {
+  def writeMetadata(metaDataJson: String,
+      mode: SaveMode,
+      upsert: Boolean): Option[String] = {
     val partnerConnection = createConnection(userName, password, login, version)
-    val oper = operation(mode)
+    val oper = operation(mode, upsert)
 
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")
@@ -127,8 +129,11 @@ class DataWriter (
   }
 
 
-  private def operation(mode: SaveMode): String = {
-    if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
+  private def operation(mode: SaveMode, upsert: Boolean): String = {
+    if (upsert) {
+      logger.warn("Ignoring SaveMode as upsert set to true")
+      "Upsert"
+    } else if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
       "Overwrite"
     } else if (mode != null && SaveMode.Append.name().equalsIgnoreCase(mode.name())) {
       "Append"

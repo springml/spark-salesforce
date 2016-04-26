@@ -29,6 +29,7 @@ import org.apache.spark.sql.sources.RelationProvider
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import com.springml.salesforce.wave.api.APIFactory
 import org.apache.spark.sql.DataFrame
+import scala.io.Source
 
 /**
  * Default source for Salesforce wave data source.
@@ -97,13 +98,24 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "36.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
+    val upsert = parameters.getOrElse("upsert", "false")
+    val metadataFile = parameters.get("metadataFile")
+    val encodeFields = parameters.get("encodeFields")
 
     validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
 
     if (datasetName.isDefined) {
+      val upsertFlag = flag(upsert, "upsert")
+      if (upsertFlag) {
+        if (metadataFile == null || !metadataFile.isDefined) {
+          sys.error("metadataFile has to be provided for upsert" )
+        }
+      }
+
       logger.info("Writing dataframe into Salesforce Wave")
       writeInSalesforceWave(username, password, login, version,
-          datasetName.get, appName, usersMetadataConfig, mode, data)
+          datasetName.get, appName, usersMetadataConfig, mode,
+          flag(upsert, "upsert"), data, metadataFile)
     } else {
       logger.info("Updating Salesforce Object")
       logger.info("Ignoring SaveMode as existing rows will be updated " + mode)
@@ -147,15 +159,16 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       appName: String,
       usersMetadataConfig: Option[String],
       mode: SaveMode,
-      data: DataFrame) {
+      upsert: Boolean,
+      data: DataFrame,
+      metadata: Option[String]) {
     val dataWriter = new DataWriter(username, password, login, version, datasetName, appName)
 
-    val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
-    val metaDataJson = MetadataConstructor.generateMetaString(data.schema, datasetName, metadataConfig)
-    logger.info(s"Metadata for dataset $datasetName is $metaDataJson")
-    logger.info("Uploading metadata for dataset " + datasetName)
+    val metaDataJson = Utils.metadata(metadata, usersMetadataConfig, data.schema, datasetName)
 
-    val writtenId = dataWriter.writeMetadata(metaDataJson, mode)
+    logger.info(s"Metadata for dataset $datasetName is $metaDataJson")
+    logger.info(s"Uploading metadata for dataset $datasetName")
+    val writtenId = dataWriter.writeMetadata(metaDataJson, mode, upsert)
     if (!writtenId.isDefined) {
       sys.error("Unable to write metadata for dataset " + datasetName)
     }
@@ -184,6 +197,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     println(s"Successfully written data for dataset $datasetName ")
 
   }
+
 
   private def validateMutualExclusive(opt1: Option[String], opt2: Option[String],
       opt1Name: String, opt2Name: String) {
