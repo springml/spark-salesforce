@@ -136,9 +136,11 @@ object Utils extends Serializable {
       datasetName: String) : String = {
 
     if (metadataFile != null && metadataFile.isDefined) {
+      logger.info("Using provided Metadata Configuration")
       val source = Source.fromFile(metadataFile.get)
       try source.mkString finally source.close()
     } else {
+      logger.info("Constructing Metadata Configuration")
       val metadataConfig = Utils.metadataConfig(usersMetadataConfig)
       val metaDataJson = MetadataConstructor.generateMetaString(schema, datasetName, metadataConfig)
       metaDataJson
