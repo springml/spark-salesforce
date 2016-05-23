@@ -177,6 +177,8 @@ case class DatasetRelation(
   override def schema: StructType = {
     if (userSchema != null) {
       userSchema
+    } else if (records == null || records.size() == 0) {
+      new StructType();
     } else if (inferSchema) {
       InferSchema(sampleRDD, header)
     } else {
