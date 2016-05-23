@@ -9,8 +9,8 @@ scalaVersion := "2.10.4"
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
-  "com.force.api" % "force-wsc" % "34.2.2",
-  "com.force.api" % "force-partner-api" % "34.0.0",
+  "com.force.api" % "force-wsc" % "37.0.3",
+  "com.force.api" % "force-partner-api" % "37.0.3",
   "com.springml" % "salesforce-wave-api" % "1.0.5",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
