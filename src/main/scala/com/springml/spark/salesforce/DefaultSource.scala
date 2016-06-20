@@ -101,6 +101,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val upsert = parameters.getOrElse("upsert", "false")
     val metadataFile = parameters.get("metadataFile")
     val encodeFields = parameters.get("encodeFields")
+    val monitorJob = parameters.getOrElse("monitorJob", "false")
 
     validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
 
@@ -115,7 +116,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       logger.info("Writing dataframe into Salesforce Wave")
       writeInSalesforceWave(username, password, login, version,
           datasetName.get, appName, usersMetadataConfig, mode,
-          flag(upsert, "upsert"), data, metadataFile)
+          flag(upsert, "upsert"), flag(monitorJob, "monitorJob"), data, metadataFile)
     } else {
       logger.info("Updating Salesforce Object")
       logger.info("Ignoring SaveMode as existing rows will be updated " + mode)
@@ -160,6 +161,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       usersMetadataConfig: Option[String],
       mode: SaveMode,
       upsert: Boolean,
+      monitorJob: Boolean,
       data: DataFrame,
       metadata: Option[String]) {
     val dataWriter = new DataWriter(username, password, login, version, datasetName, appName)
@@ -193,8 +195,18 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     if (!committed) {
       sys.error("Unable to commit data for " + datasetName)
     }
+
     logger.info(s"Successfully written data for dataset $datasetName ")
     println(s"Successfully written data for dataset $datasetName ")
+
+    if (monitorJob) {
+      logger.info("Monitoring Job status in Salesforce wave")
+      if (Utils.monitorJob(writtenId.get, username, password, login, version)) {
+        logger.info(s"Successfully dataset $datasetName has been processed in Salesforce Wave")
+      } else {
+        sys.error(s"Upload Job for dataset $datasetName failed in Salesforce Wave. Check Monitor Job in Salesforce Wave for more details")
+      }
+    }
 
   }
 
