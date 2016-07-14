@@ -119,8 +119,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           flag(upsert, "upsert"), flag(monitorJob, "monitorJob"), data, metadataFile)
     } else {
       logger.info("Updating Salesforce Object")
-      logger.info("Ignoring SaveMode as existing rows will be updated " + mode)
-      updateSalesforceObject(username, password, login, version, sfObject.get, data)
+      updateSalesforceObject(username, password, login, version, sfObject.get, mode, data)
     }
 
     return createReturnRelation(data)
@@ -132,6 +131,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       login: String,
       version: String,
       sfObject: String,
+      mode: SaveMode,
       data: DataFrame) {
 
     val csvHeader = Utils.csvHeadder(data.schema);
@@ -141,7 +141,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
     val bulkAPI = APIFactory.getInstance.bulkAPI(username, password, login, version)
-    val writer = new SFObjectWriter(username, password, login, version, sfObject, csvHeader)
+    val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, csvHeader)
     logger.info("Writing data")
     val successfulWrite = writer.writeData(repartitionedRDD)
     logger.info(s"Writing data was successful was $successfulWrite")

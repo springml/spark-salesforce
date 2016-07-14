@@ -2,9 +2,10 @@ package com.springml.spark.salesforce
 
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Row, SaveMode}
 import com.springml.salesforce.wave.api.APIFactory
 import com.springml.salesforce.wave.api.BulkAPI
+import com.springml.salesforce.wave.util.WaveAPIConstants
 
 /**
  * Write class responsible for update Salesforce object using data provided in dataframe
@@ -17,14 +18,15 @@ class SFObjectWriter (
     val login: String,
     val apiVersion: String,
     val sfObject: String,
+    val mode: SaveMode,
     val csvHeader: String
     ) extends Serializable {
 
   @transient val logger = Logger.getLogger(classOf[SFObjectWriter])
 
   def writeData(rdd: RDD[Row]): Boolean = {
-    val csvRDD = rdd.map(row => row.toSeq.map(value => value.toString()).mkString(","))
-    val jobId = bulkAPI.createJob(sfObject).getId
+    val csvRDD = rdd.map(row => row.toSeq.map(value => Utils.rowValue(value)).mkString(","))
+    val jobId = bulkAPI.createJob(sfObject, operation(mode), WaveAPIConstants.STR_CSV).getId
 
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
@@ -56,6 +58,17 @@ class SFObjectWriter (
 
   def bulkAPI() : BulkAPI = {
     APIFactory.getInstance.bulkAPI(username, password, login, apiVersion)
+  }
+
+  private def operation(mode: SaveMode): String = {
+    if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
+      WaveAPIConstants.STR_UPDATE
+    } else if (mode != null && SaveMode.Append.name().equalsIgnoreCase(mode.name())) {
+      WaveAPIConstants.STR_INSERT
+    } else {
+      logger.warn("SaveMode " + mode + " Not supported. Using 'insert' operation")
+      WaveAPIConstants.STR_INSERT
+    }
   }
 
 }
