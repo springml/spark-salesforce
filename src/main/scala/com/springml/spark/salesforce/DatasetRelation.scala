@@ -222,7 +222,7 @@ case class DatasetRelation(
     if (row.contains(name)) {
       row(name)
     } else {
-      logger.warn("Value not found for " + name)
+      logger.debug("Value not found for " + name)
       ""
     }
   }
