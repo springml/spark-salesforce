@@ -1,18 +1,18 @@
 name := "spark-salesforce"
 
-version := "1.0.7"
+version := "2.0.0"
 
 organization := "com.springml"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.7"
 
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
-  "com.force.api" % "force-wsc" % "37.0.3",
-  "com.force.api" % "force-partner-api" % "37.0.3",
+  "com.force.api" % "force-wsc" % "38.0.4",
+  "com.force.api" % "force-partner-api" % "38.0.0",
   "com.springml" % "salesforce-wave-api" % "1.0.6",
-  "org.mockito" % "mockito-core" % "2.0.31-beta"
+  "org.mockito" % "mockito-core" % "2.2.22"
 )
 
 parallelExecution in Test := false
@@ -27,10 +27,9 @@ resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositor
 
 resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
-libraryDependencies += "com.databricks" %% "spark-csv" % "1.3.0"
-libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.4.4"
+libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.8.5"
 libraryDependencies += "org.codehaus.woodstox" % "woodstox-core-asl" % "4.4.0"
 
 // Spark Package Details (sbt-spark-package)
@@ -40,7 +39,7 @@ spAppendScalaVersion := true
 
 // spDependencies += "databricks/spark-csv:1.3.0"
 
-sparkVersion := "1.6.0"
+sparkVersion := "2.0.0"
 
 sparkComponents += "sql"
 
