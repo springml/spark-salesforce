@@ -34,7 +34,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   override def beforeEach() {
     when(waveAPI.query(saql)).thenReturn(qr)
     when(waveAPI.queryWithPagination(saql, "q", 2)).thenReturn(paginatedQR)
-    when(waveAPI.queryMore(any())).thenReturn(qr)
+    when(waveAPI.queryMore(new QueryResult)).thenReturn(qr)
     when(forceAPI.query(soql)).thenReturn(soqlQR);
     sparkConf = new SparkConf().setMaster("local").setAppName("Test Dataset Relation")
     sc = new SparkContext(sparkConf)
