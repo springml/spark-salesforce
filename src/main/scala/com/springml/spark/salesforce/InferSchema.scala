@@ -66,7 +66,7 @@ object InferSchema {
     }
   }
 
-    /**
+  /**
    * Infer type of string field. Given known type Double, and a string "1", there is no
    * point checking if it is an Int, as the final type must be Double or higher.
    */

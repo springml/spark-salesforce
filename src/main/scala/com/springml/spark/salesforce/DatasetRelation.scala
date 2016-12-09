@@ -28,6 +28,7 @@ import org.apache.spark.sql.types.TimestampType
 import com.springml.salesforce.wave.api.ForceAPI
 import com.springml.salesforce.wave.api.WaveAPI
 import java.net.URLEncoder
+import java.util.Random
 
 /**
  * Relation class for reading data from Salesforce and construct RDD
@@ -132,15 +133,6 @@ case class DatasetRelation(
   }
 
   private def sampleRDD: RDD[Array[String]] = {
-    // Defaulting sample values to 10
-    val NO_OF_SAMPLE_ROWS = 10;
-    // If the record is less than 10, then the whole data is used as sample
-    val sampleSize = if (records.size() < NO_OF_SAMPLE_ROWS) {
-      records.size()
-    } else {
-      NO_OF_SAMPLE_ROWS
-    }
-
     logger.debug("Sample Size : " + sampleSize)
     // Constructing RDD from records
     val sampleRowArray = new Array[Array[String]](sampleSize)
@@ -162,16 +154,48 @@ case class DatasetRelation(
     sqlContext.sparkContext.parallelize(sampleRowArray)
   }
 
+  private def sampleSize : Integer = {
+    // Defaulting sample values to 10
+    val NO_OF_SAMPLE_ROWS = 10;
+    // If the record is less than 10, then the whole data is used as sample
+    if (records.size() < NO_OF_SAMPLE_ROWS) {
+      records.size()
+    } else {
+      NO_OF_SAMPLE_ROWS
+    }
+  }
+
   private def header: Array[String] = {
-    val firstRow = records.iterator().next()
-    val header = new Array[String](firstRow.size())
-    var index: Int = 0
-    for (column <- firstRow) {
-      header(index) = column._1
-      index = index + 1
+    val sampleList = sample
+
+    var header : Array[String] = null
+    for (currentRecord <- sampleList) {
+      logger.debug("record size " + currentRecord.size())
+      val recordHeader = new Array[String](currentRecord.size())
+      var index: Int = 0
+      for ((k, _) <- currentRecord) {
+        logger.info("Key " + k)
+        recordHeader(index) = k
+        index = index + 1
+      }
+
+      if (header == null || header.length < recordHeader.length) {
+        header = recordHeader
+      }
     }
 
     header
+  }
+
+  private def sample: java.util.List[java.util.Map[String, String]] = {
+    val sampleRecords = new java.util.ArrayList[java.util.Map[String, String]]()
+    val random = new Random()
+    val totalSize = records.size()
+    for (i <- 0 to sampleSize) {
+      sampleRecords += records.get(random.nextInt(totalSize))
+    }
+
+    sampleRecords
   }
 
   override def schema: StructType = {
@@ -182,12 +206,12 @@ case class DatasetRelation(
     } else if (inferSchema) {
       InferSchema(sampleRDD, header)
     } else {
-      // Construct the schema with all fields as String
-      val firstRow = records.iterator().next()
-      val structFields = new Array[StructField](firstRow.size())
+      val structFields = new Array[StructField](header.length)
       var index: Int = 0
-      for (fieldEntry <- firstRow) {
-        structFields(index) = StructField(fieldEntry._1, StringType, nullable = true)
+      logger.debug("header size " + header.length)
+      logger.debug("header content " + header)
+      for (fieldEntry <- header) {
+        structFields(index) = StructField(fieldEntry, StringType, nullable = true)
         index = index + 1
       }
 
