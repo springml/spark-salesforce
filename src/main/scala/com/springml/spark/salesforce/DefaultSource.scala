@@ -66,6 +66,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val soql = parameters.get("soql")
     val resultVariable = parameters.get("resultVariable")
     val pageSize = parameters.getOrElse("pageSize", "1000")
+    val sampleSize = parameters.getOrElse("sampleSize", "1000")
     val maxRetry = parameters.getOrElse("maxRetry", "5")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
     // This is only needed for Spark version 1.5.2 or lower
@@ -78,12 +79,12 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     if (saql.isDefined) {
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
-          resultVariable, pageSize.toInt, encodeFields, inferSchemaFlag)
+          resultVariable, pageSize.toInt, sampleSize.toInt, encodeFields, inferSchemaFlag)
     } else {
       val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
       DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
-          null, 0, encodeFields, inferSchemaFlag)
+          null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag)
     }
 
   }

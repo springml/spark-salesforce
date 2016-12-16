@@ -41,6 +41,7 @@ case class DatasetRelation(
     sqlContext: SQLContext,
     resultVariable: Option[String],
     pageSize: Int,
+    sampleSize: Int,
     encodeFields: Option[String],
     inferSchema: Boolean) extends BaseRelation with TableScan {
 
@@ -133,10 +134,10 @@ case class DatasetRelation(
   }
 
   private def sampleRDD: RDD[Array[String]] = {
-    logger.debug("Sample Size : " + sampleSize)
+    logger.debug("Sample Size : " + getSampleSize)
     // Constructing RDD from records
-    val sampleRowArray = new Array[Array[String]](sampleSize)
-    for (i <- 0 to sampleSize - 1) {
+    val sampleRowArray = new Array[Array[String]](getSampleSize)
+    for (i <- 0 to getSampleSize - 1) {
       val row = records(i);
       logger.debug("rows size : " + row.size())
       val fieldArray = new Array[String](row.size())
@@ -154,14 +155,17 @@ case class DatasetRelation(
     sqlContext.sparkContext.parallelize(sampleRowArray)
   }
 
-  private def sampleSize : Integer = {
-    // Defaulting sample values to 10
-    val NO_OF_SAMPLE_ROWS = 10;
-    // If the record is less than 10, then the whole data is used as sample
-    if (records.size() < NO_OF_SAMPLE_ROWS) {
-      records.size()
+  private def getSampleSize : Integer = {
+    // If the record is less than sampleSize, then the whole data is used as sample
+    val totalRecordsSize = records.size()
+    logger.debug("Total Record Size: " + totalRecordsSize)
+    if (totalRecordsSize < sampleSize) {
+      logger.debug("Total Record Size " + totalRecordsSize
+          + " is Smaller than Sample Size "
+          + sampleSize + ". So total records are used for sampling")
+      totalRecordsSize
     } else {
-      NO_OF_SAMPLE_ROWS
+      sampleSize
     }
   }
 
@@ -174,7 +178,7 @@ case class DatasetRelation(
       val recordHeader = new Array[String](currentRecord.size())
       var index: Int = 0
       for ((k, _) <- currentRecord) {
-        logger.info("Key " + k)
+        logger.debug("Key " + k)
         recordHeader(index) = k
         index = index + 1
       }
@@ -191,7 +195,7 @@ case class DatasetRelation(
     val sampleRecords = new java.util.ArrayList[java.util.Map[String, String]]()
     val random = new Random()
     val totalSize = records.size()
-    for (i <- 0 to sampleSize) {
+    for (i <- 0 to getSampleSize) {
       sampleRecords += records.get(random.nextInt(totalSize))
     }
 
@@ -206,11 +210,12 @@ case class DatasetRelation(
     } else if (inferSchema) {
       InferSchema(sampleRDD, header)
     } else {
-      val structFields = new Array[StructField](header.length)
+      val schemaHeader = header
+      val structFields = new Array[StructField](schemaHeader.length)
       var index: Int = 0
-      logger.debug("header size " + header.length)
-      logger.debug("header content " + header)
-      for (fieldEntry <- header) {
+      logger.info("header size " + schemaHeader.length)
+      for (fieldEntry <- schemaHeader) {
+        logger.info("header (" + index + ") = " + fieldEntry)
         structFields(index) = StructField(fieldEntry, StringType, nullable = true)
         index = index + 1
       }
