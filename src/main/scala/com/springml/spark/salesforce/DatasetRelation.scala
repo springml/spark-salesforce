@@ -43,7 +43,8 @@ case class DatasetRelation(
     pageSize: Int,
     sampleSize: Int,
     encodeFields: Option[String],
-    inferSchema: Boolean) extends BaseRelation with TableScan {
+    inferSchema: Boolean,
+    replaceDatasetNameWithId: Boolean) extends BaseRelation with TableScan {
 
   private val logger = Logger.getLogger(classOf[DatasetRelation])
 
@@ -64,11 +65,18 @@ case class DatasetRelation(
   private def queryWave(): java.util.List[java.util.Map[String, String]] = {
     var records: java.util.List[java.util.Map[String, String]]= null;
 
+    var saql = query
+    if (replaceDatasetNameWithId) {
+      logger.debug("Original Query " + query)
+      saql = replaceDatasetNameWithId(query, 0)
+      logger.debug("Modified Query " + saql)
+    }
+
     if (resultVariable == null || !resultVariable.isDefined) {
-      val resultSet = waveAPI.query(query)
+      val resultSet = waveAPI.query(saql)
       records = resultSet.getResults.getRecords
     } else {
-      var resultSet = waveAPI.queryWithPagination(query, resultVariable.get, pageSize)
+      var resultSet = waveAPI.queryWithPagination(saql, resultVariable.get, pageSize)
       records = resultSet.getResults.getRecords
 
       while (!resultSet.isDone()) {
@@ -78,6 +86,29 @@ case class DatasetRelation(
     }
 
     records
+  }
+
+  def replaceDatasetNameWithId(query : String, startIndex : Integer) : String = {
+    var modQuery = query
+
+    logger.debug("start Index : " + startIndex)
+    logger.debug("query : " + query)
+    val loadIndex = query.indexOf("load", startIndex)
+    logger.debug("loadIndex : " + loadIndex + "\n")
+    if (loadIndex != -1) {
+      val startDatasetIndex = query.indexOf('\"', loadIndex + 1)
+      val endDatasetIndex = query.indexOf('\"', startDatasetIndex + 1)
+      val datasetName = query.substring(startDatasetIndex + 1, endDatasetIndex)
+
+      val datasetId = waveAPI.getDatasetId(datasetName)
+      if (datasetId != null) {
+        modQuery = query.replaceAll(datasetName, datasetId)
+      }
+
+      modQuery = replaceDatasetNameWithId(modQuery, endDatasetIndex + 1)
+    }
+
+    modQuery
   }
 
   private def querySF(): java.util.List[java.util.Map[String, String]] = {
@@ -213,9 +244,9 @@ case class DatasetRelation(
       val schemaHeader = header
       val structFields = new Array[StructField](schemaHeader.length)
       var index: Int = 0
-      logger.info("header size " + schemaHeader.length)
+      logger.debug("header size " + schemaHeader.length)
       for (fieldEntry <- schemaHeader) {
-        logger.info("header (" + index + ") = " + fieldEntry)
+        logger.debug("header (" + index + ") = " + fieldEntry)
         structFields(index) = StructField(fieldEntry, StringType, nullable = true)
         index = index + 1
       }

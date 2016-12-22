@@ -72,6 +72,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     // This is only needed for Spark version 1.5.2 or lower
     // Special characters in older version of spark is not handled properly
     val encodeFields = parameters.get("encodeFields")
+    val replaceDatasetNameWithId = parameters.getOrElse("replaceDatasetNameWithId", "false")
 
     validateMutualExclusive(saql, soql, "saql", "soql")
     val inferSchemaFlag = flag(inferSchema, "inferSchema");
@@ -79,12 +80,18 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     if (saql.isDefined) {
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
-          resultVariable, pageSize.toInt, sampleSize.toInt, encodeFields, inferSchemaFlag)
+          resultVariable, pageSize.toInt, sampleSize.toInt,
+          encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean)
     } else {
+      if (replaceDatasetNameWithId.toBoolean) {
+        logger.warn("Ignoring 'replaceDatasetNameWithId' option as it is not applicable to soql")
+      }
+
       val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
       DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
-          null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag)
+          null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag,
+          replaceDatasetNameWithId.toBoolean)
     }
 
   }

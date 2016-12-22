@@ -27,6 +27,10 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   val qr = testQR()
   val soqlQR = testSOQLQR()
   val paginatedQR = testPaginatedQR()
+  val accountDatasetName = "Account"
+  val productsDatasetName = "Products"
+  val accountDatasetId = "0FbB00000000KybKAE/0FcB0000000DGKeKAO"
+  val productsDatasetId = "0FbB00000000Uf3KAE/0FcB0000000FHWdKAO"
 
   var sparkConf: SparkConf = _
   var sc: SparkContext = _
@@ -35,6 +39,9 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     when(waveAPI.query(saql)).thenReturn(qr)
     when(waveAPI.queryWithPagination(saql, "q", 2)).thenReturn(paginatedQR)
     when(waveAPI.queryMore(any())).thenReturn(qr)
+    when(waveAPI.getDatasetId(accountDatasetName)).thenReturn(accountDatasetId)
+    when(waveAPI.getDatasetId(productsDatasetName)).thenReturn(productsDatasetId)
+
     when(forceAPI.query(soql)).thenReturn(soqlQR);
     sparkConf = new SparkConf().setMaster("local").setAppName("Test Dataset Relation")
     sc = new SparkContext(sparkConf)
@@ -111,7 +118,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test read without schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false, false)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -125,7 +132,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val fields = Array[StructField] (countField, deviceTypeField)
     val schema = StructType(fields)
 
-    val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext, null, 0, 100, null, false)
+    val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext, null, 0, 100, null, false, false)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -135,7 +142,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val sqlContext = new SQLContext(sc)
     var resultVariable = None: Option[String]
     resultVariable = Some("q")
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, resultVariable, 2, 100, null, false)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, resultVariable, 2, 100, null, false, false)
     val rdd = dr.buildScan()
     assert(rdd != null)
     // 2 - During initial read
@@ -146,7 +153,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test read using soql without schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext, null, 0, 100, null, false)
+    val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext, null, 0, 100, null, false, false)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -160,7 +167,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val fields = Array[StructField] (countField, deviceTypeField)
     val schema = StructType(fields)
 
-    val dr = DatasetRelation(null, forceAPI, soql, schema, sqlContext, null, 0, 100, null, false)
+    val dr = DatasetRelation(null, forceAPI, soql, schema, sqlContext, null, 0, 100, null, false, false)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -168,7 +175,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test infer schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, true)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, true, false)
 
     val inferedSchema = dr.schema
     print("inferedSchema  : " + inferedSchema)
@@ -182,4 +189,165 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
     sc.stop()
   }
+
+  test ("test replace dataset name") {
+    when(waveAPI.query(any())).thenReturn(qr)
+
+    val saql = """q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;"""
+
+    val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;"""
+
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val modSaql = dr.replaceDatasetNameWithId(saql, 0)
+
+    assert(expectedSaql.equals(modSaql))
+  }
+
+  test ("test replace dataset name for multiple load stmts") {
+    when(waveAPI.query(any())).thenReturn(qr)
+
+    val saql = """q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "Products";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  """
+
+    val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "0FbB00000000Uf3KAE/0FcB0000000FHWdKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  """
+
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val modSaql = dr.replaceDatasetNameWithId(saql, 0)
+
+    assert(expectedSaql.equals(modSaql))
+  }
+
+  test ("test replace dataset name for multiple load stmts of same dataset") {
+    when(waveAPI.query(any())).thenReturn(qr)
+
+    val saql = """q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  """
+
+    val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  """
+
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val modSaql = dr.replaceDatasetNameWithId(saql, 0)
+
+    assert(expectedSaql.equals(modSaql))
+  }
+
+  test ("test replace dataset name for multiple load stmts of different dataset") {
+    when(waveAPI.query(any())).thenReturn(qr)
+
+    val saql = """q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "Products";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  """
+
+    val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  q = load "0FbB00000000Uf3KAE/0FcB0000000FHWdKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;
+                  """
+
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val modSaql = dr.replaceDatasetNameWithId(saql, 0)
+
+    assert(expectedSaql.equals(modSaql))
+  }
+
+  test ("test should not replace dataset name") {
+    val sqlContext = new SQLContext(sc)
+    val saql = """q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;"""
+    when(waveAPI.query(saql)).thenReturn(qr)
+
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false, false)
+    val rdd = dr.buildScan()
+    validate(rdd)
+    sc.stop()
+  }
+
+  test ("test should replace dataset name") {
+    val sqlContext = new SQLContext(sc)
+    val saql = """q = load "Account";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;"""
+    val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;"""
+    when(waveAPI.query(expectedSaql)).thenReturn(qr)
+
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false, true)
+    val rdd = dr.buildScan()
+    validate(rdd)
+    sc.stop()
+  }
+
+  test ("test replace dataset name with invalid datasetName") {
+    val saql = """q = load "xyz";
+                  q = group q by all;
+                  q = foreach q generate count() as 'count';
+                  q = limit q 2000;"""
+    when(waveAPI.query(saql)).thenReturn(qr)
+
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val modSaql = dr.replaceDatasetNameWithId(saql, 0)
+
+    assert(saql.equals(modSaql))
+
+  }
+
 }
