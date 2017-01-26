@@ -13,7 +13,7 @@ You can link against this library in your program at the following ways:
 ```
 <dependency>
     <groupId>com.springml</groupId>
-    <artifactId>spark-salesforce-wave_2.10</artifactId>
+    <artifactId>spark-salesforce_2.10</artifactId>
     <version>1.0.6</version>
 </dependency>
 ```
@@ -27,7 +27,7 @@ libraryDependencies += "com.springml" % "spark-salesforce_2.10" % "1.0.6"
 This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
 
 ```
-$ bin/spark-shell --packages com.springml:spark-salesforce-wave_2.10:1.0.6
+$ bin/spark-shell --packages com.springml:spark-salesforce_2.10:1.0.6
 ```
 
 ## Features
