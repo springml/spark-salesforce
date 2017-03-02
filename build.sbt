@@ -2,7 +2,7 @@ name := "spark-salesforce"
 
 version := "1.0.8"
 
-organization :=      "com.springml"
+organization :=            "com.springml"
 
 scalaVersion := "2.10.4"
 
