@@ -4,8 +4,8 @@ import java.util.ArrayList
 import java.util.HashMap
 import scala.collection.JavaConversions._
 import org.scalatest.{ FunSuite, BeforeAndAfterEach}
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.scalatest.easymock.EasyMockSugar
 import org.mockito.Matchers._
 import com.springml.salesforce.wave.api.WaveAPI
 import com.springml.salesforce.wave.model.{ QueryResult, Results}
@@ -15,11 +15,12 @@ import org.apache.spark.{ SparkConf, SparkContext}
 import org.apache.spark.sql.{ SQLContext, Row}
 import com.springml.salesforce.wave.api.ForceAPI
 import com.springml.salesforce.wave.model.SOQLResult
+import org.mockito.ArgumentMatchers
 
 /**
  * Test DatasetRelation with schema and without schema
  */
-class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfterEach {
+class TestDatasetRelation extends FunSuite with org.scalatest.mockito.MockitoSugar with BeforeAndAfterEach {
   val waveAPI = mock[WaveAPI]
   val forceAPI = mock[ForceAPI]
   val saql = "q = load \"0FbB000000007qmKAA/0FcB00000000LgTKAU\"; q = group q by ('event', 'device_type'); q = foreach q generate 'event' as 'event',  'device_type' as 'device_type', count() as 'count'; q = limit q 2000;";
@@ -38,7 +39,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   override def beforeEach() {
     when(waveAPI.query(saql)).thenReturn(qr)
     when(waveAPI.queryWithPagination(saql, "q", 2)).thenReturn(paginatedQR)
-    when(waveAPI.queryMore(any())).thenReturn(qr)
+    when(waveAPI.queryMore(ArgumentMatchers.any())).thenReturn(qr)
     when(waveAPI.getDatasetId(accountDatasetName)).thenReturn(accountDatasetId)
     when(waveAPI.getDatasetId(productsDatasetName)).thenReturn(productsDatasetId)
 
@@ -191,7 +192,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test replace dataset name") {
-    when(waveAPI.query(any())).thenReturn(qr)
+    when(waveAPI.query(ArgumentMatchers.any())).thenReturn(qr)
 
     val saql = """q = load "Account";
                   q = group q by all;
@@ -210,7 +211,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test replace dataset name for multiple load stmts") {
-    when(waveAPI.query(any())).thenReturn(qr)
+    when(waveAPI.query(ArgumentMatchers.any())).thenReturn(qr)
 
     val saql = """q = load "Account";
                   q = group q by all;
@@ -239,7 +240,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test replace dataset name for multiple load stmts of same dataset") {
-    when(waveAPI.query(any())).thenReturn(qr)
+    when(waveAPI.query(ArgumentMatchers.any())).thenReturn(qr)
 
     val saql = """q = load "Account";
                   q = group q by all;
@@ -268,7 +269,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test replace dataset name for multiple load stmts of different dataset") {
-    when(waveAPI.query(any())).thenReturn(qr)
+    when(waveAPI.query(ArgumentMatchers.any())).thenReturn(qr)
 
     val saql = """q = load "Account";
                   q = group q by all;

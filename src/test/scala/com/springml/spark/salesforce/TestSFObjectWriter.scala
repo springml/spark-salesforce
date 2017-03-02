@@ -2,7 +2,7 @@ package com.springml.spark.salesforce
 
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{ FunSuite, BeforeAndAfterEach}
 import com.springml.salesforce.wave.api.BulkAPI
 import org.apache.spark.{ SparkConf, SparkContext}
@@ -11,7 +11,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{ Row, DataFrame, SQLContext}
 import org.apache.spark.sql.types.{ StructType, StringType, StructField}
 
-class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterEach {
+class TestSFObjectWriter extends FunSuite with MockitoSugar  with BeforeAndAfterEach {
   val contact = "Contact";
   val jobId = "750B0000000WlhtIAC";
   val batchId = "751B0000000scSHIAY";
