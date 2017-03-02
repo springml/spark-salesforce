@@ -50,7 +50,7 @@ object Utils extends Serializable {
 
   def logSaveResultError(result: SaveResult): Unit = {
 
-    result.getErrors.map(error => {
+    result.getErrors.foreach(error => {
       logger.error(error.getMessage)
       println(error.getMessage)
       error.getFields.map(logger.error(_))
@@ -171,7 +171,7 @@ object Utils extends Serializable {
         throw ex
       }
     } finally {
-      Try(partnerConnection.logout())
+      val _ = Try(partnerConnection.logout())
     }
   }
 

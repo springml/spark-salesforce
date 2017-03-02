@@ -4,7 +4,8 @@ version := "1.0.8"
 
 organization := "com.springml"
 
-scalaVersion := "2.10.4"
+crossScalaVersions := Seq("2.10.6", "2.11.8")
+scalaVersion := crossScalaVersions.value.head
 
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
