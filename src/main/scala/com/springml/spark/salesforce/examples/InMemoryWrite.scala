@@ -24,7 +24,7 @@ import org.apache.spark.{SparkContext, SparkConf}
  */
 object InMemoryWrite {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) = {
 
     val sparkConf = new SparkConf().setMaster(args(0)).setAppName("csv write")
     val sc = new SparkContext(sparkConf)
@@ -40,10 +40,10 @@ object InMemoryWrite {
     val columnNames = List("c1", "c2", "c3", "c4")
     val columnStruct = columnNames.map(colName => StructField(colName, StringType, true))
     val schema = StructType(columnStruct)
-   
+
     val inMemoryDF = sqlContext.createDataFrame(inMemoryRDD, schema)
     inMemoryDF.printSchema()
-    
+
     inMemoryDF.write.format("com.springml.spark.salesforce").option("username", args(2)).
       option("password", args(3)).option("datasetName", dataSetName).save()
 
