@@ -10,7 +10,6 @@ parallelExecution in Test := false
 
 //resolvers += "Local IV2" at "file://"+Path.userHome.absolutePath+"/.ivy2/local"
 
-
 libraryDependencies += "com.force.api" % "force-wsc" % "39.0.0"   % "provided"
 libraryDependencies += "com.force.api" % "force-partner-api" % "39.0.0" % "provided"
 libraryDependencies += "com.springml" % "salesforce-wave-api" % "1.0.8" % "provided" 
