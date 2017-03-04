@@ -1,92 +1,92 @@
 name := "spark-salesforce"
 
-version := "1.0.8"
+version := "1.1"
 
 organization := "com.springml"
 
-scalaVersion := "2.10.4"
-
-resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
-
-libraryDependencies ++= Seq(
-  "com.force.api" % "force-wsc" % "37.0.3",
-  "com.force.api" % "force-partner-api" % "37.0.3",
-  "com.springml" % "salesforce-wave-api" % "1.0.7",
-  "org.mockito" % "mockito-core" % "2.0.31-beta"
-)
+scalaVersion := "2.11.8"
 
 parallelExecution in Test := false
 
 resolvers += Resolver.url("artifactory", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
-
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
-
 resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"
-
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
-resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
+libraryDependencies += "com.force.api" % "force-wsc" % "39.0.0"   % "provided"
+libraryDependencies += "com.force.api" % "force-partner-api" % "39.0.0" % "provided"
+libraryDependencies += "com.springml" % "salesforce-wave-api" % "1.0.8" % "provided" 
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
-libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
-libraryDependencies += "com.databricks" %% "spark-csv" % "1.3.0"
-libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.4.4"
-libraryDependencies += "org.codehaus.woodstox" % "woodstox-core-asl" % "4.4.0"
+libraryDependencies += "org.mockito" % "mockito-core" % "2.7.1" % "provided"
 
-// Spark Package Details (sbt-spark-package)
-spName := "springml/spark-salesforce"
+libraryDependencies += "org.scalatest" % "scalatest_2.11" % "3.0.0" % "provided"
 
-spAppendScalaVersion := true
+libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1" % "provided"
+libraryDependencies += "com.databricks" % "spark-csv_2.11" % "1.5.0" % "provided"
 
-// spDependencies += "databricks/spark-csv:1.3.0"
+libraryDependencies += "com.force.api" % "force-metadata-api" % "39.0.0" % "provided"
 
-sparkVersion := "1.6.0"
+libraryDependencies += "com.fasterxml.jackson.core" % "jackson-core" % "2.8.7"
+libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7"
+libraryDependencies += "com.fasterxml.jackson.core" % "jackson-annotations" % "2.8.7"
+libraryDependencies += "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.8.7"
+libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.8.7"
 
-sparkComponents += "sql"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.1.0" % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.1.0" % "provided"
 
-publishMavenStyle := true
 
-spIncludeMaven := true
+//spName := "springml/spark-salesforce"
 
-spShortDescription := "Spark Salesforce Wave Connector"
+//sparkVersion := "2.1.0"
 
-spDescription := """Spark Salesforce Wave Connector
-                    | - Creates Salesforce Wave Datasets using dataframe
-                    | - Constructs Salesforce Wave dataset's metadata using schema present in dataframe
-                    | - Can use custom metadata for constructing Salesforce Wave dataset's metadata""".stripMargin
+//spAppendScalaVersion := true
 
-// licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
+//sparkComponents += "sql"
 
-credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+//publishMavenStyle := true
 
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (version.value.endsWith("SNAPSHOT"))
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-}
+//sp IncludeMaven := true
 
-pomExtra := (
-  <url>https://github.com/springml/spark-salesforce</url>
-    <licenses>
-      <license>
-        <name>Apache License, Verision 2.0</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>
-    <scm>
-      <connection>scm:git:github.com/springml/spark-salesforce</connection>
-      <developerConnection>scm:git:git@github.com:springml/spark-salesforce</developerConnection>
-      <url>github.com/springml/spark-salesforce</url>
-    </scm>
-    <developers>
-      <developer>
-        <id>springml</id>
-        <name>Springml</name>
-        <url>http://www.springml.com</url>
-      </developer>
-    </developers>)
+//spShortDescription := "Spark Salesforce Wave Connector"
+
+//spDescription := """Spark Salesforce Wave Connector
+//                    | - Creates Salesforce Wave Datasets using dataframe
+//                    | - Constructs Salesforce Wave dataset's metadata using schema present in dataframe
+//                    | - Can use custom metadata for constructing Salesforce Wave dataset's metadata""".stripMargin
+
+//// licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
+
+//credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+
+//publishTo := {
+//  val nexus = "https://oss.sonatype.org/"
+//  if (version.value.endsWith("SNAPSHOT"))
+//    Some("snapshots" at nexus + "content/repositories/snapshots")
+//  else
+//    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+//}
+
+//pomExtra := (
+//  <url>https://github.com/springml/spark-salesforce</url>
+//    <licenses>
+//      <license>
+//        <name>Apache License, Verision 2.0</name>
+//        <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+//        <distribution>repo</distribution>
+//      </license>
+//    </licenses>
+//    <scm>
+//      <connection>scm:git:github.com/springml/spark-salesforce</connection>
+//      <developerConnection>scm:git:git@github.com:springml/spark-salesforce</developerConnection>
+//      <url>github.com/springml/spark-salesforce</url>
+//    </scm>
+//    <developers>
+//      <developer>
+//       <id>springml</id>
+//        <name>Springml</name>
+//        <url>http://www.springml.com</url>
+//      </developer>
+//    </developers>)
 
 
