@@ -1,10 +1,10 @@
 name := "spark-salesforce"
 
-version := "1.0.8"
+version := "1.1.0"
 
 organization := "com.springml"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.8"
 
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
@@ -40,7 +40,7 @@ spAppendScalaVersion := true
 
 // spDependencies += "databricks/spark-csv:1.3.0"
 
-sparkVersion := "1.6.0"
+sparkVersion := "2.1.0"
 
 sparkComponents += "sql"
 
