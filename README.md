@@ -4,7 +4,10 @@ A library for connecting Spark with Salesforce and Salesforce Wave.
 
 ## Requirements
 
-This library requires Spark 1.4+
+This library requires Spark 2.x.
+
+For Spark 1.x support, please check [spark1.x](https://github.com/springml/spark-salesforce/tree/spark1.x) branch.
+
 
 ## Linking
 You can link against this library in your program at the following ways:
@@ -13,21 +16,21 @@ You can link against this library in your program at the following ways:
 ```
 <dependency>
     <groupId>com.springml</groupId>
-    <artifactId>spark-salesforce_2.10</artifactId>
-    <version>1.0.6</version>
+    <artifactId>spark-salesforce_2.11</artifactId>
+    <version>1.1.0</version>
 </dependency>
 ```
 
 ### SBT Dependency
 ```
-libraryDependencies += "com.springml" % "spark-salesforce_2.10" % "1.0.6"
+libraryDependencies += "com.springml" % "spark-salesforce_2.11" % "1.1.0"
 ```
 
 ## Using with Spark shell
 This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
 
 ```
-$ bin/spark-shell --packages com.springml:spark-salesforce_2.10:1.0.6
+$ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 ```
 
 ## Features
@@ -53,14 +56,10 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.10:1.0.6
 
 
 ### Scala API
-Spark 1.4+:
 ```scala
-import org.apache.spark.sql.SQLContext
-
 // Writing Dataset
-val sqlContext = new SQLContext(sc)
 // Using spark-csv package to load dataframes
-val df = sqlContext.
+val df = spark.
                 read.
                 format("com.databricks.spark.csv").
                 option("header", "true").
@@ -75,7 +74,7 @@ df.
 
 // Reading Dataset
 val saql = "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
-val sfWaveDF = sqlContext.
+val sfWaveDF = spark.
                 read.
                 format("com.springml.spark.salesforce").
                 option("username", "your_salesforce_username").
@@ -86,13 +85,13 @@ val sfWaveDF = sqlContext.
 
 // Reading Salesforce Object
 val soql = "select id, name, amount from opportunity"
-val sfDF = sqlContext.
+val sfDF = spark.
                 read.
                 format("com.springml.spark.salesforce").
                 option("username", "your_salesforce_username").
                 option("password", "your_salesforce_password_with_secutiry_token").
                 option("soql", soql).
-                option("version", "35.0").
+                option("version", "37.0").
                 load()
 
 // Update Salesforce Object
@@ -101,7 +100,7 @@ val sfDF = sqlContext.
 // Id,Description
 // 003B00000067Rnx,Superman
 // 003B00000067Rnw,SpiderMan
-val df = sqlContext.
+val df = spark.
                 read.
                 format("com.databricks.spark.csv").
                 option("header", "true").
@@ -118,14 +117,9 @@ df.
 
 
 ### Java API
-Spark 1.4+:
 ```java
-import org.apache.spark.sql.SQLContext
-
-SQLContext sqlContext = new SQLContext(sc);
-
 // Writing Dataset
-DataFrame df = sqlContext
+DataFrame df = spark
                     .read()
                     .format("com.databricks.spark.csv")
                     .option("header", "true")
@@ -139,7 +133,7 @@ df.write()
 
 // Reading Dataset
 String saql = "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
-DataFrame sfWaveDF = sqlContext.
+DataFrame sfWaveDF = spark.
           read().
           format("com.springml.spark.salesforce").
           option("username", "your_salesforce_username").
@@ -150,13 +144,13 @@ DataFrame sfWaveDF = sqlContext.
 
 // Reading Salesforce Object
 String soql = "select id, name, amount from opportunity"
-DataFrame sfDF = sqlContext.
+DataFrame sfDF = spark.
           read.
           format("com.springml.spark.salesforce").
           option("username", "your_salesforce_username").
           option("password", "your_salesforce_password_with_secutiry_token").
           option("soql", soql).
-          option("version", "35.0").
+          option("version", "37.0").
           load()      
 
 // Update Salesforce Object
@@ -165,7 +159,7 @@ DataFrame sfDF = sqlContext.
 // Id,Description
 // 003B00000067Rnx,Superman
 // 003B00000067Rnw,SpiderMan
-DataFrame df = sqlContext
+DataFrame df = spark
                     .read()
                     .format("com.databricks.spark.csv")
                     .option("header", "true")
@@ -180,19 +174,18 @@ df.write().format("com.springml.spark.salesforce")
 
 
 ### R API
-Spark 1.4+:
 ```r
 # Writing Dataset
-df <- read.df(sqlContext, "your_csv_location", source = "com.databricks.spark.csv", inferSchema = "true")
+df <- read.df("your_csv_location", source = "com.databricks.spark.csv", inferSchema = "true")
 write.df(df, path="", source='com.springml.spark.salesforce', mode="append", datasetName="your_dataset_name", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token")
 
 # Reading Dataset
 saql <- "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
-sfWaveDF <- read.df(sqlContext, source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, saql=saql)
+sfWaveDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, saql=saql)
 
 # Reading Salesforce Object
 soql <- "select id, name, amount from opportunity"
-dfDF <- read.df(sqlContext, source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, soql=soql)
+dfDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, soql=soql)
 
 # Update Salesforce Object
 # CSV should contain Id column followed other fields to be Updated
@@ -200,22 +193,11 @@ dfDF <- read.df(sqlContext, source="com.springml.spark.salesforce", username=you
 # Id,Description
 # 003B00000067Rnx,Superman
 # 003B00000067Rnw,SpiderMan
-df <- read.df(sqlContext, "your_csv_location", source = "com.databricks.spark.csv", header = "true")
+df <- read.df("your_csv_location", source = "com.databricks.spark.csv", header = "true")
 write.df(df, path="", source='com.springml.spark.salesforce', mode="append", sfObject="Contacct", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token")
 
 ```
 
-
-### Python API
-Spark 1.4+:
-```python
-from pyspark.sql import SQLContext
-sqlContext = SQLContext(sc)
-
-df = sqlContext.read.format('com.databricks.spark.csv').options(header='true').load("your_csv_location")
-df.write.
-  format('com.springml.spark.salesforce').options(username='your_salesforce_username').options(password='your_salesforce_password_with_secutiry_token').options(datasetName='your_dataset_name').save()
-```
 
 ## Metadata Configuration
 This library constructs [Salesforce Wave Dataset Metadata] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf) using Metadata Configuration present in [resources](https://github.com/springml/spark-salesforce/blob/master/src/main/resources/metadata_config.json). User may modifiy the default behaviour. User can modify already defined datatypes or user may add additional datatypes. For example, user can change the scale to 5 for float datatype
@@ -261,14 +243,11 @@ More details on Salesforce Wave Metadata can be found [here] (https://resources.
 This sample is to change the format of the timestamp datatype. 
 
 ```scala
-import org.apache.spark.sql.SQLContext
-
-val sqlContext = new SQLContext(sc)
 // Default format is yyyy-MM-dd'T'HH:mm:ss.SSS'Z' and 
 // the this sample changes to yyyy/MM/dd'T'HH:mm:ss
 val modifiedTimestampConfig = """{"timestamp":{"wave_type":"Date","format":"yyyy/MM/dd'T'HH:mm:ss"}}"""
 // Using spark-csv package to load dataframes
-val df = sqlContext.read.format("com.databricks.spark.csv").
+val df = spark.read.format("com.databricks.spark.csv").
                           option("header", "true").
                           load("your_csv_location")
 df.
@@ -290,7 +269,7 @@ df.
 * Click Create-->Library and select "Maven Coordinate" as source
 * Click "Search Spark Packages and Maven Central" button
 * Select "spark-salesforce" and click "Create Library" button
-* Library called "spark-salesforce_2.10-1.0.1" will be created
+* Library called "spark-salesforce_2.11-1.1.0" will be created
 * Now attach it to your clusters
 
 #### Upload Databricks table into Salesforce Wave
@@ -298,7 +277,7 @@ df.
 * Select language that you want to use, select your cluster and click "Create" to create a notebook
 * Write code to create dataframe. Below scala code is to create dataframe from your table
 ```scala
-val df = sqlContext.sql("select * from <your_table_name>")
+val df = spark.sql("select * from <your_table_name>")
 ```
 * Write code to upload the dataframe as dataset into Salesforce Wave. Below scala code is to upload a dataframe into Salesforce Wave
 ```scala
