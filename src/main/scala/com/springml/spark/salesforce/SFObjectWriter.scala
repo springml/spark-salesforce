@@ -30,9 +30,15 @@ class SFObjectWriter (
 
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
-        val data = csvHeader + "\n" + iterator.toArray.mkString("\n")
-        val batchInfo = bulkAPI.addBatch(jobId, data)
-        val success = (batchInfo.getId != null)
+        val records = iterator.toArray.mkString("\n")
+        var batchInfoId : String = null
+        if (records != null && !records.isEmpty()) {
+          val data = csvHeader + "\n" + records
+          val batchInfo = bulkAPI.addBatch(jobId, data)
+          batchInfoId = batchInfo.getId
+        }
+
+        val success = (batchInfoId != null)
         // Job status will be checked after completing all batches
         List(success).iterator
       }
