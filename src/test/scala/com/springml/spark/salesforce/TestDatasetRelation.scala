@@ -348,7 +348,6 @@ class TestDatasetRelation extends FunSuite with org.scalatest.mockito.MockitoSug
     val modSaql = dr.replaceDatasetNameWithId(saql, 0)
 
     assert(saql.equals(modSaql))
-
   }
 
 }

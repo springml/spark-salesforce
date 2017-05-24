@@ -36,8 +36,5 @@ object CsvWrite {
 
     df.write.format("com.springml.spark.salesforce").option("username", args(3)).
       option("password", args(4)).option("datasetName", dataSetName).save()
-
-
   }
-
 }

@@ -12,10 +12,11 @@ resolvers += Resolver.url("artifactory", url("http://scalasbt.artifactoryonline.
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+resolvers += "local m2" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
 
 libraryDependencies += "com.force.api" % "force-wsc" % "39.0.0"   % "provided"
 libraryDependencies += "com.force.api" % "force-partner-api" % "39.0.0" % "provided"
-libraryDependencies += "com.springml" % "salesforce-wave-api" % "1.0.8" % "provided" 
+libraryDependencies += "com.springml" % "salesforce-wave-api" % "1.0.9" % "provided" 
 
 libraryDependencies += "org.mockito" % "mockito-core" % "2.7.1" % "provided"
 
@@ -34,6 +35,9 @@ libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-
 
 libraryDependencies += "org.apache.spark" %% "spark-core" % "2.1.0" % "provided"
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.1.0" % "provided"
+
+libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.125"
+libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.11.125"
 
 
 //spName := "springml/spark-salesforce"

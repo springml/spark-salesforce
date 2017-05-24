@@ -250,7 +250,6 @@ case class DatasetRelation(
         structFields(index) = StructField(fieldEntry, StringType, nullable = true)
         index = index + 1
       }
-
       StructType(structFields)
     }
   }
