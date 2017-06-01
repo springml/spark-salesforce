@@ -47,7 +47,7 @@ import org.apache.commons.io.input.ReaderInputStream
  */
 object Utils extends Serializable {
 
-  @transient val logger = Logger.getLogger("Utils")
+  @transient val logger = Logger.getLogger(classOf[BulkRelation])
 
   def createConnection(username: String, password: String,
                        login: String, version: String): PartnerConnection = {
@@ -274,7 +274,7 @@ object Utils extends Serializable {
   }
 
   /**
-   * Redshift COPY and UNLOAD commands don't support s3n or s3a, but users may wish to use them
+   * In case certain commands don't support s3n or s3a, but users may wish to use them
    * for data loads. This function converts the URL back to the s3:// format.
    */
   def fixS3Url(url: String): String = {
@@ -350,13 +350,26 @@ object Utils extends Serializable {
     }
   }
 
-  def saveS3File(fileName: String, s3Client: AmazonS3Client, input: java.io.InputStream): Unit = {
+  var nSaving = 0;
+  
+  def saveS3File(fileName: String, s3Client: AmazonS3Client, input: java.io.InputStream, mem:(Long,Long)): Unit = {
     val s3URI = createS3URI(Utils.fixS3Url(fileName))
     val bucket = s3URI.getBucket
     val filename = s3URI.getKey
     val baos = new java.io.ByteArrayOutputStream();
-    logger.trace(s"Saving $filename")
+    nSaving += 1 // debug
+    logger.trace(s"--> n:$nSaving Starting to save $filename")
+    val usageRatio = mem._1 / mem._2
+    if (usageRatio > 70) {
+    val multiplier = (1/(110-usageRatio))
+    logger.trace(s"Memory Usage ratio $usageRatio, multiplier $multiplier")
+      val waitTime = Math.min(5000 * nSaving * (1/(110-usageRatio)), 180000) // wait up to 3 minutes
+      logger.error(s"Will sleep ${waitTime/1000} Seconds before attempting to save $filename. Memory usage $usageRatio")
+      Thread.sleep(waitTime.toLong)
+    }
     s3Client.putObject(bucket, filename, input, new ObjectMetadata())
+    logger.trace(s"<-- n:$nSaving Finished saving $filename")
+    nSaving -= 1
   }
 
   /**
@@ -399,14 +412,14 @@ object Utils extends Serializable {
     val bufferSize = 40000
     val reader = new BufferedReader(new InputStreamReader(stream));
     try {
+      reader.mark(bufferSize)
       import scala.collection.JavaConverters._
       val line = reader.readLine();
-      logger.trace("HEADER:" + line);
       if (line != null) {
         val columns = line.split(",");
         result.setHeader(columns.toList.asJava)
       }
-      reader.mark(bufferSize)
+      if (!result.isEmpty()) logger.debug("HEADER:" + line);
       var n = 0
       var charsRead = 0
       var avgLineLength = 0

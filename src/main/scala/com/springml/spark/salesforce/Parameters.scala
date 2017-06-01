@@ -1,6 +1,7 @@
 package com.springml.spark.salesforce
 
 import com.amazonaws.auth.{ AWSCredentialsProvider, BasicSessionCredentials }
+import org.apache.log4j.Logger
 
 /**
  * All user-specifiable parameters for spark-redshift, along with their validation rules and
@@ -10,49 +11,30 @@ private[salesforce] object Parameters {
 
   val DEFAULT_PARAMETERS: Map[String, String] = Map(
     // Notes:
-    // * tempdir, dbtable and url have no default and they *must* be provided
-    // * sortkeyspec has no default, but is optional
-    // * distkey has no default, but is optional unless using diststyle KEY
-    // * jdbcdriver has no default, but is optional
+    // * username, password has no default and they *must* be provided
+    // * either one of 'soql' or 'saql' must be provided but not both
+    // * tempdir must be provided for bulk operations
+    // * aws credentials can be provided either via iamrole, or temporaryAWSCredentials
+      
     "forward_spark_s3_credentials" -> "false",
     "login" -> "https://login.salesforce.com",
     "version" -> "36.0",
     "csvnullstring" -> "@NULL@",
     "overwrite" -> "false",
     "diststyle" -> "EVEN",
-    "preactions" -> ";",
-    "postactions" -> ";",
+//    "preactions" -> ";",
+//    "postactions" -> ";",
     "pageSize" -> "1000",
     "sampleSize" -> "1000",
     "maxRetry" -> "5",
+    "maxFutureRetry" -> "8",
+    "maxBatchRetry" -> "20",
+    "queryAll" -> "false",
     "inferSchema" -> "true",
     "replaceDatasetNameWithId" -> "false",
     "upsert" -> "false",
     "monitorJob" -> "false",
-    "aws_iam_role" ->"arn:aws:iam::699237797221:role/myRedshiftRole"   
-    //    "pkChunking" -> "false"
-    //    val username = param(parameters, "SF_USERNAME", "username")
-    //    val password = param(parameters, "SF_PASSWORD", "password")
-    //    val login = parameters.getOrElse("login", "https://login.salesforce.com")
-    //    val version = parameters.getOrElse("version", "36.0")
-    //    val saql = parameters.get("saql")
-    //    val soql = parameters.get("soql")
-    //    val resultVariable = parameters.get("resultVariable")
-    //    val pageSize = parameters.getOrElse("pageSize", "1000")
-    //    val sampleSize = parameters.getOrElse("sampleSize", "1000")
-    //    val maxRetry = parameters.getOrElse("maxRetry", "5")
-    //    val inferSchema = parameters.getOrElse("inferSchema", "false")
-    //    val bulk = parameters.getOrElse("bulk", "false")
-    //    val pkChunking = parameters.getOrElse("pkChunking", "false")
-    //    val tempDir = parameters.getOrElse("tempDir","undefined");
-    //    val datasetName = parameters.get("datasetName")
-    //    val sfObject = parameters.get("sfObject")
-    //    val appName = parameters.getOrElse("appName", null)
-    //    val usersMetadataConfig = parameters.get("metadataConfig")
-    //    val upsert = parameters.getOrElse("upsert", "false")
-    //    val metadataFile = parameters.get("metadataFile")
-    //    val monitorJob = parameters.getOrElse("monitorJob", "false")
-    )
+    "aws_iam_role" -> "arn:aws:iam::699237797221:role/myRedshiftRole")
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
 
@@ -90,6 +72,8 @@ private[salesforce] object Parameters {
    */
   case class MergedParameters(parameters: Map[String, String], save: Boolean) {
 
+    private val logger = Logger.getLogger(classOf[MergedParameters])
+
     if (save) {
       require(datasetName.isDefined && upsert && !metadataFile.isDefined, "metadataFile has to be provided for upsert")
 
@@ -112,12 +96,23 @@ private[salesforce] object Parameters {
         forwardSparkS3Credentials).count(_ == true) == 1,
         "The aws_iam_role, forward_spark_s3_credentials, and temporary_aws_*. options are " +
           "mutually-exclusive; please specify only one.")
+
+      this.pkChunking // ensure format is like "Sforce-Enable-PKChunking: true" or "Sforce-Enable-PKChunking: chunkSize=250000"
+      printContents()
+    }
+
+    private def printContents() = {
+      logger.trace(":::::Parameters:::::")
+      val blackList = List("aws_iam_role", "password")
+      for (param <- this.parameters) {
+        if (!blackList.contains(param._1))
+          logger.trace(s"${param._1}: ${param._2}")
+      }
     }
 
     /**
-     * A root directory to be used for intermediate data exchange, expected to be on S3, or
-     * somewhere that can be written to and read from by Redshift. Make sure that AWS credentials
-     * are available for S3.
+     * A root directory to be used for intermediate storage of batch results for bulk api operations, expected to be on S3, or
+     * somewhere that can be written to and read from. Make sure that AWS credentials are available for S3.
      */
     def rootTempDir: String = parameters("tempdir")
 
@@ -138,16 +133,6 @@ private[salesforce] object Parameters {
      */
     def createPerQueryTempDir(): String = Utils.makeTempPath(rootTempDir)
 
-    //    /**
-    //     * The Redshift query to be used as the target when loading data.
-    //     */
-    //    def query: Option[String] = parameters.get("query").orElse {
-    //      parameters.get("dbtable")
-    //        .map(_.trim)
-    //        .filter(t => t.startsWith("(") && t.endsWith(")"))
-    //        .map(t => t.drop(1).dropRight(1))
-    //    }
-
     /**
      * User and password to be used to authenticate to SalesForce
      */
@@ -157,37 +142,15 @@ private[salesforce] object Parameters {
       Option(user, password)
     }
 
-    //    /**
-    //     * List of semi-colon separated SQL statements to run before write operations.
-    //     * This can be useful for running DELETE operations to clean up data
-    //     *
-    //     * If the action string contains %s, the table name will be substituted in, in case a staging
-    //     * table is being used.
-    //     *
-    //     * Defaults to empty.
-    //     */
-    //    def preActions: Array[String] = parameters("preactions").split(";")
-    //
-    //    /**
-    //     * List of semi-colon separated SQL statements to run after successful write operations.
-    //     * This can be useful for running GRANT operations to make your new tables readable to other
-    //     * users and groups.
-    //     *
-    //     * If the action string contains %s, the table name will be substituted in, in case a staging
-    //     * table is being used.
-    //     *
-    //     * Defaults to empty.
-    //     */
-    //    def postActions: Array[String] = parameters("postactions").split(";")
 
     /**
-     * The IAM role that Redshift should assume for COPY/UNLOAD operations.
+     * The IAM role that is assumed for COPY/UNLOAD operations.
      */
     def iamRole: Option[String] = parameters.get("aws_iam_role")
 
     /**
      * If true then this library will automatically discover the credentials that Spark is
-     * using to connect to S3 and will forward those credentials to Redshift over JDBC.
+     * using to connect to S3 and will forward those credentials to Salesforce
      */
     def forwardSparkS3Credentials: Boolean = parameters("forward_spark_s3_credentials").toBoolean
 
@@ -219,6 +182,8 @@ private[salesforce] object Parameters {
     def user = parameters.get("username").getOrElse(sys.env.get("SF_USERNAME").get);
     def password = parameters.get("password").getOrElse(sys.env.get("SF_PASSWORD").get);
 
+    def queryAll = parameters.get("queryAll").get.toBoolean
+
     def version = parameters("version")
 
     def login = parameters("login")
@@ -231,11 +196,30 @@ private[salesforce] object Parameters {
 
     def maxRetry = parameters.get("maxRetry").get.toInt
 
+    def maxBatchRetry = parameters.get("maxBatchRetry").get.toInt
+
+    def maxFutureRetry = parameters.get("maxFutureRetry").get.toInt
+
     def replaceDatasetNameWithId = "true".equalsIgnoreCase(parameters("replaceDatasetNameWithId"))
 
     def bulk = parameters.get("bulk").isDefined && "true".equalsIgnoreCase(parameters("bulk")) || parameters.get("pkChunking").isDefined
 
-    def pkChunking = parameters.get("pkChunking")
+    /**
+     * Ensure format is like "Sforce-Enable-PKChunking: true" or "Sforce-Enable-PKChunking: chunkSize=250000"
+     */
+    def pkChunking: Option[(String, String)] = {
+      val pk = parameters.get("pkchunking")
+      pk match {
+        case Some(s) => {
+          val ss = s.split(":")
+          require((ss.length == 2)
+            && ss(0).toLowerCase().startsWith("Sforce-Enable-PKChunking".toLowerCase()),
+            "Ensure format is like 'Sforce-Enable-PKChunking: true' or 'Sforce-Enable-PKChunking: chunkSize=250000'")
+          Some(ss(0).trim, ss(1).trim)
+        }
+        case _ => None
+      }
+    }
 
     def datasetName = parameters.get("datasetName")
 

@@ -1,6 +1,6 @@
 package com.springml.spark.salesforce
 
-/*
+/* 
  * Copyright 2015 Databricks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,10 +26,10 @@ import com.springml.spark.salesforce.Parameters.MergedParameters
 
 private [salesforce] object AWSCredentialsUtils {
  /**
-    * Generates a credentials string for use in Redshift COPY and UNLOAD statements.
+    * Generates a credentials string.
     * Favors a configured `aws_iam_role` if available in the parameters.
     */
-  def getRedshiftCredentialsString(
+  def getCredentialsString(
       params: MergedParameters,
       sparkAwsCredentials: AWSCredentials): String = {
 

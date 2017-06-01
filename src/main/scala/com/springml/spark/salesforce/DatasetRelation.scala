@@ -84,7 +84,6 @@ case class DatasetRelation(
         records.addAll(resultSet.getResults.getRecords)
       }
     }
-
     records
   }
 

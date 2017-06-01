@@ -36,8 +36,8 @@ libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-
 libraryDependencies += "org.apache.spark" %% "spark-core" % "2.1.0" % "provided"
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.1.0" % "provided"
 
-libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.125"
-libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.11.125"
+libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.136"
+libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.11.136"
 
 
 //spName := "springml/spark-salesforce"

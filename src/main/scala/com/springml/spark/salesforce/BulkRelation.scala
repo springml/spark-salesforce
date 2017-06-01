@@ -1,67 +1,35 @@
 package com.springml.spark.salesforce
 
-import java.math.BigDecimal
-import scala.collection.mutable.Queue
-import java.sql.Date
-import java.sql.Timestamp
-import scala.collection.JavaConversions.asScalaBuffer
-import scala.collection.JavaConversions.mapAsScalaMap
+import java.sql.{ Date, Timestamp }
+import scala.collection.JavaConversions.{ asScalaBuffer, mapAsScalaMap }
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.sources.TableScan
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.types.TimestampType
-import com.springml.salesforce.wave.api.BulkAPI
-import com.springml.salesforce.wave.model.BatchInfo
-import com.springml.salesforce.wave.model.JobInfo
-import org.apache.spark.sql.catalyst.ScalaReflection
-import java.net.URLEncoder
-import java.util.Random
-import com.springml.salesforce.wave.api.APIFactory
-import java.net.URI
+import org.apache.spark.sql.{ Row, SQLContext }
+import org.apache.spark.sql.sources.{ BaseRelation, TableScan }
+import org.apache.spark.sql.types.{ StructType, TimestampType }
+import com.springml.salesforce.wave.api.{ BulkAPI, APIFactory }
+import com.springml.salesforce.wave.model.{ BatchInfo, JobInfo, BatchResult }
 import com.springml.spark.salesforce.Parameters.MergedParameters
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.auth.AWSCredentialsProvider
-import java.io.InputStreamReader
-import java.net.URI
 import com.fasterxml.jackson.databind.{ DeserializationFeature, ObjectMapper }
-import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import collection.JavaConverters._
 import scala.collection.JavaConversions
-import com.springml.salesforce.wave.model.BatchResult
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.{ DataFrame, Row, SaveMode, SQLContext }
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import java.io.BufferedReader
-import java.io.InputStream
-import scala.concurrent.Future
-import scala.concurrent.forkjoin._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{ Future, Promise }
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
+import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.TimeUnit;
 import scala.annotation.tailrec
 import scala.util.{ Success, Failure }
-import scala.concurrent._
-import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
 import scala.util.control.NonFatal
-import scala.concurrent.duration._
-import com.springml.salesforce.wave.model.BatchInfo
-import com.springml.salesforce.wave.model.BatchResult
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Random
 import scala.Left
 import scala.Right
 import java.io.InputStream
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.TimeUnit;
+import java.net.URI
+import java.lang.management.ManagementFactory
 
 private[salesforce] case class BulkRelation(
     params: MergedParameters,
@@ -72,6 +40,11 @@ private[salesforce] case class BulkRelation(
    * Logger
    */
   private val logger = Logger.getLogger(classOf[BulkRelation])
+
+  private class IllegalStateDoNotRetry(message: String = null, cause: Throwable = null)
+    extends IllegalStateException(message, cause)
+  private class OutofMemoryWithRetry(message: String = null, cause: Throwable = null)
+    extends IllegalStateException(message, cause)
 
   /**
    * Bulk API
@@ -84,6 +57,7 @@ private[salesforce] case class BulkRelation(
   val batchResultPromise = Promise[BatchResult]()
   val promiseFuture = batchResultPromise.future
   var sampleBatchResult: Option[BatchResult] = None
+  var s3Client: AmazonS3Client = _
 
   init()
 
@@ -92,7 +66,15 @@ private[salesforce] case class BulkRelation(
       Utils.assertThatFileSystemIsNotS3BlockFileSystem(
         new URI(params.rootTempDir), sqlContext.sparkContext.hadoopConfiguration)
     }
-    job = bulkAPI.createQueryJob(name)
+    val pk = params.pkChunking
+    pk match {
+      case Some((k, v)) => job = bulkAPI.createQueryJob(name, k, v, params.queryAll)
+      case None         => job = bulkAPI.createQueryJob(name, false)
+    }
+
+    val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration);
+    s3Client = s3ClientFactory(creds)
+
     val batch = bulkAPI.addBatch(job.getId, params.soql.get)
     if (batch.isFailed())
       throw new IllegalArgumentException(s"Bulk API Batch failed: ${batch.getStateMessage}")
@@ -100,7 +82,6 @@ private[salesforce] case class BulkRelation(
       case result =>
         { logger.trace("Computed Sample RDD from first batch."); sampleBatchResult = Some(result); sampleBatchResult; }
     }
-
   }
 
   /**
@@ -114,7 +95,7 @@ private[salesforce] case class BulkRelation(
       val records = br.getRecords.map { row => JavaConversions.asScalaBuffer(row).toArray }.toSeq
       return sqlContext.sparkContext.parallelize(records)
     }
-    throw new IllegalArgumentException("This should not have happened");
+    throw new IllegalArgumentException("This should not have happened. For large tables, try using PKChunking, or if not, try increasing the number of trials and the wait limit in between trials. ");
   }
 
   ////////////////////  BATCH PROCESSING ///////////////////////////////
@@ -124,44 +105,89 @@ private[salesforce] case class BulkRelation(
 
   private def batchList: List[BatchInfo] = {
     import collection.JavaConverters._
-    logger.trace("Waiting 15 seconds for batches to be ready!")
-    Thread.sleep(15000);
-    bulkAPI.getBatchInfoList(job.getId).getBatchInfo.asScala.toList
+    val batches = bulkAPI.getBatchInfoList(job.getId).getBatchInfo.asScala.toList
+    patientBatchList(params.maxBatchRetry * 2, batches)
+  }
+
+  @annotation.tailrec
+  private def patientBatchList(n: Int, batches: List[BatchInfo]): List[BatchInfo] = {
+    if (n < 0) return batches
+    batches.find(bi => bi.isCompleted()) match {
+      case Some(_) => return batches
+      case None => {
+        logger.trace(s"$n: Waiting 10 seconds for batches to be ready!")
+        Thread.sleep(10000);
+        import collection.JavaConverters._
+        val bs = bulkAPI.getBatchInfoList(job.getId).getBatchInfo.asScala.toList
+        patientBatchList(n - 1, bs)
+      }
+    }
   }
 
   lazy val batchProcessors: Seq[Future[BatchResult]] = {
     val batches = batchList;
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3Client)
-    batches.foreach { bi: BatchInfo => logger.trace(s"batch Id: ${bi.getId} status: ${bi.getState} message: ${bi.getStateMessage} ") }
-    val bs = batches.filter(_.hasDataToLoad).toSeq
-    bs.map(bi => Future { retry(3, 20 second) { processBatch(20, bi) } })
+    val filtered = batches.filter(_.hasDataToLoad).toSeq
+    logger.info(s"The following batches will be processed:")
+    filtered.foreach(bi => logger.info(s"   Batch:$bi"))
+    filtered.map(bi => Future { retry(params.maxFutureRetry, 20 second) { processBatch(params.maxBatchRetry, bi) } })
   }
 
   @annotation.tailrec
   final def processBatch(n: Int, bi: BatchInfo): BatchResult = {
     if (n < 0)
       throw new IllegalStateException(s"Batch $bi is in invalid state: ${bi.getStateMessage}. Will stop processing it!")
+    else if (!bi.hasDataToLoad())
+      throw new IllegalStateDoNotRetry(s"Batch $bi is in not to be processed: ${bi.getStateMessage}!")
     if (bi.needsTime())
       Thread.sleep(30000)
     if (bi.isCompleted()) {
       var stream: InputStream = null
       try {
+        memUsage(s" >> before $bi")
         stream = bulkAPI.queryBatchStream(bi)
         if (!sampleBatchResult.isDefined) {
           val r = Utils.sampleResult(stream)
-          sampleBatchResult = Some(r._2)
-          stream = r._1
+          if (!r._2.isEmpty) {
+            sampleBatchResult = Some(r._2)
+            stream = r._1
+          }
         }
         val fn = s"$tempDir${job.getId}/${bi.getId}"
-        Utils.saveS3File(fn, s3Client, stream)
+        Utils.saveS3File(fn, s3Client, stream, memUsage());
         new BatchResult(bi.getJobId, bi.getId, fn)
+      } catch {
+        case e: Exception => { logger.error(s"Error in processing batch: $bi"); throw e }
+        case e: OutOfMemoryError =>
+          { outOfMemory(e, bi) }
       } finally {
         if (stream != null) stream.close
+        memUsage(s" << after $bi")
       }
     } else {
       logger.trace(s"$bi is not ready yet! Will wait 30 secs! counter:$n")
       processBatch(n - 1, bulkAPI.getBatchInfo(bi.getJobId, bi.getId))
     }
+  }
+
+  private def memUsage(msg: String = "") = {
+    val memoryBean = ManagementFactory.getMemoryMXBean()
+    val heapUsage = memoryBean.getHeapMemoryUsage();
+    val maxMemory = heapUsage.getMax() / (1024 * 1024);
+    val usedMemory = heapUsage.getUsed() / (1024 * 1024);
+    val message = s"$msg  :: memory use : ${usedMemory}M / ${maxMemory}M"
+    if (msg != null && msg.size > 0) logger.trace(message)
+    (maxMemory, usedMemory)
+  }
+
+  @throws(classOf[OutofMemoryWithRetry])
+  private def outOfMemory(e: OutOfMemoryError, batch: BatchInfo) = {
+    val mem = memUsage()
+    val maxMemory = mem._1
+    val usedMemory = mem._2
+    val msg = s"Out of memory while processing $batch message"
+    logger.error(msg, e)
+    throw new OutofMemoryWithRetry(msg)
   }
 
   /**
@@ -171,7 +197,7 @@ private[salesforce] case class BulkRelation(
   private def retry[T](n: Int, pause: Duration)(fn: => T): T = {
     scala.util.Try { fn } match {
       case Success(x) => x
-      case Failure(e) if n > 1 && NonFatal(e) => {
+      case Failure(e) if n > 1 && NonFatal(e) && !e.isInstanceOf[IllegalStateDoNotRetry] => {
         logger.trace(s"${e.getMessage} - Pausing ${pause.toMillis / 1000} seconds to retry")
         Thread.sleep(pause.toMillis)
         retry(n - 1, pause + pause)(fn)
@@ -193,13 +219,15 @@ private[salesforce] case class BulkRelation(
     Await.ready(first, Duration.Inf).value match {
       case None             => awaitSuccess(futureSeq, done) // Shouldn't happen!
       case Some(Failure(e)) => Left(e)
-      case Some(Success(_)) =>
-        logger.trace(sampleBatchResult)
+      case Some(Success(r)) =>
+        val rr: BatchResult = r.asInstanceOf[BatchResult]
+        logger.trace(s"Processed batch: ${rr}")
         if (!sampleBatchResult.isDefined) {
-          logger.trace(s"FirstSuccess:${first.value}")
+          logger.trace(s"First success candidate:${first.value}")
           batchResultPromise completeWith first.asInstanceOf[scala.concurrent.Future[com.springml.salesforce.wave.model.BatchResult]]
         }
         val (complete, running) = futureSeq.partition(_.isCompleted)
+        memUsage(s" Completed: ${complete.size} Running: ${running.size}")
         val answers = complete.flatMap(_.value)
         answers.find(_.isFailure) match {
           case Some(Failure(e)) => Left(e)
@@ -233,10 +261,11 @@ private[salesforce] case class BulkRelation(
     }
   }
 
-  def s3Client = {
-    val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration);
-    s3ClientFactory(creds)
-  }
+  //  def s3Client: AmazonS3Client = {
+  //    logger.trace("Creating S3 Client")
+  //    val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration);
+  //    s3ClientFactory(creds)
+  //  }
 
   private val LOCK = new ReentrantLock
 
@@ -253,6 +282,13 @@ private[salesforce] case class BulkRelation(
           logger.trace(s"Finished running batch processors")
         } finally {
           if (gotLock) {
+            try {
+              bulkAPI.closeJob(job.getId)
+            } catch {
+              case e: Exception => {
+                logger.error(s"Error in closing bulk job for: ${params.soql.get}", e)
+              }
+            }
             LOCK.unlock()
             logger.trace(s"Unlocked lock")
           }
@@ -266,18 +302,7 @@ private[salesforce] case class BulkRelation(
         logger.error(s"Error in processing bulk query: ${params.soql.get}", e)
         throw e
       }
-
-    } finally {
-      try {
-     //   bulkAPI.closeJob(job.getId)
-      } catch {
-        case e: Exception => {
-          logger.error(s"Error in closing bulk job for: ${params.soql.get}", e)
-          throw e
-        }
-      }
     }
-
   }
 
   override def buildScan(): RDD[Row] = {
@@ -292,15 +317,13 @@ private[salesforce] case class BulkRelation(
       folderContents.map(file => s"s3n://${file.getBucketName}/${file.getKey}")
     }
 
-    filesToRead.foreach(logger.trace(_));
-
-    logger.trace("Finished processing batches. Starting to load");
-
     try {
       sqlContext.read
         .format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat")
         .schema(schema)
-        .option("header", "false")
+        .option("header", "true")
+        .option("quote", "\"")
+        .option("escape", "\\")
         .load(filesToRead: _*).rdd
     } catch {
       case e: Exception => e.printStackTrace(); throw e;

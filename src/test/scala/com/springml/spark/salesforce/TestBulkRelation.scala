@@ -52,7 +52,7 @@ class TestBulkRelation extends FunSuite with org.scalatest.mockito.MockitoSugar 
   //    spark.stop()
   //  }
 
-  test("directly from salesforce") {
+  ignore("directly from salesforce") {
       val dfr = spark.sqlContext.
         read.
         format("com.springml.spark.salesforce").
