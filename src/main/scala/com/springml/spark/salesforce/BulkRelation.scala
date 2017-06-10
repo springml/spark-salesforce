@@ -106,16 +106,17 @@ private[salesforce] case class BulkRelation(
   private def batchList: List[BatchInfo] = {
     import collection.JavaConverters._
     val batches = bulkAPI.getBatchInfoList(job.getId).getBatchInfo.asScala.toList
-    patientBatchList(params.maxBatchRetry * 2, batches)
+    logger.trace(s"Waiting for bulk query batches to be ready! Will recheck every 10 seconds")
+    patientBatchList(params.maxBatchRetry * 4, batches)
   }
 
   @annotation.tailrec
   private def patientBatchList(n: Int, batches: List[BatchInfo]): List[BatchInfo] = {
     if (n < 0) return batches
     batches.find(bi => bi.isCompleted()) match {
-      case Some(_) => return batches
+      case Some(_) => {println("!");return batches}
       case None => {
-        logger.trace(s"$n: Waiting 10 seconds for batches to be ready!")
+        print(".")
         Thread.sleep(10000);
         import collection.JavaConverters._
         val bs = bulkAPI.getBatchInfoList(job.getId).getBatchInfo.asScala.toList
@@ -283,6 +284,7 @@ private[salesforce] case class BulkRelation(
         } finally {
           if (gotLock) {
             try {
+              logger.trace(s"Closing salesforce job: $job")
               bulkAPI.closeJob(job.getId)
             } catch {
               case e: Exception => {
@@ -318,13 +320,14 @@ private[salesforce] case class BulkRelation(
     }
 
     try {
-      sqlContext.read
+      val dfr = sqlContext.read
         .format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat")
         .schema(schema)
         .option("header", "true")
-        .option("quote", "\"")
-        .option("escape", "\\")
-        .load(filesToRead: _*).rdd
+        .option("wholeFile",params.wholeFile)
+       params.quote match  { case Some(q) => dfr.option("quote",q)  case _ => {} }
+       params.escape match { case Some(e) => dfr.option("escape",e) case _ => {} }
+       dfr.load(filesToRead: _*).rdd
     } catch {
       case e: Exception => e.printStackTrace(); throw e;
     }

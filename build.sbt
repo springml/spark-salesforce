@@ -1,6 +1,6 @@
 name := "spark-salesforce"
 
-version := "1.1"
+version := "1.2"
 
 organization := "com.springml"
 
@@ -8,37 +8,41 @@ scalaVersion := "2.11.8"
 
 parallelExecution in Test := false
 
-resolvers += Resolver.url("artifactory", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
-resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
-resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"
-resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+
+resolvers += "nightly-spark-builds" at "https://repository.apache.org/snapshots"
 resolvers += "local m2" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
 
-libraryDependencies += "com.force.api" % "force-wsc" % "39.0.0"   % "provided"
-libraryDependencies += "com.force.api" % "force-partner-api" % "39.0.0" % "provided"
-libraryDependencies += "com.springml" % "salesforce-wave-api" % "1.0.9" % "provided" 
+//resolvers += Resolver.url("artifactory", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
+//resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+//resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"
+//resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+//resolvers += "spark-packages" at "https://dl.bintray.com/spark-packages/maven/"
 
-libraryDependencies += "org.mockito" % "mockito-core" % "2.7.1" % "provided"
 
-libraryDependencies += "org.scalatest" % "scalatest_2.11" % "3.0.0" % "provided"
+libraryDependencies ++= {
+	val sparkVersion =  "2.2.1-SNAPSHOT"
+	Seq(
+		"com.force.api" % "force-wsc" % "39.0.0",
+		"com.force.api" % "force-partner-api" % "39.0.0",
+		"com.springml"  % "salesforce-wave-api" % "1.0.9",
+		"org.mockito"   % "mockito-core" % "2.7.1",
+		"org.scalatest" % "scalatest_2.11" % "3.0.0",
+		"com.force.api" % "force-metadata-api" % "39.0.0",
+		"com.fasterxml.jackson.core"   % "jackson-core"               % "2.8.7",
+		"com.fasterxml.jackson.core"   % "jackson-databind"           % "2.8.7",
+		"com.fasterxml.jackson.core"   % "jackson-annotations"        % "2.8.7",
+		"com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.8.7",  // do not remove!
+		"com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.8.7",
+		"com.madhukaraphatak" %% "java-sizeof" % "0.1",
+		"com.amazonaws" % "aws-java-sdk-s3" % "1.11.140",
+		"com.amazonaws" % "aws-java-sdk" % "1.11.140",
+		"org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+		"org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
+	)
+}
 
-libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1" % "provided"
-libraryDependencies += "com.databricks" % "spark-csv_2.11" % "1.5.0" % "provided"
 
-libraryDependencies += "com.force.api" % "force-metadata-api" % "39.0.0" % "provided"
-
-libraryDependencies += "com.fasterxml.jackson.core" % "jackson-core" % "2.8.7"
-libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7"
-libraryDependencies += "com.fasterxml.jackson.core" % "jackson-annotations" % "2.8.7"
-libraryDependencies += "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.8.7"
-libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.8.7"
-
-libraryDependencies += "org.apache.spark" %% "spark-core" % "2.1.0" % "provided"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.1.0" % "provided"
-
-libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.136"
-libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.11.136"
-
+//sparkComponents += "sql"
 
 //spName := "springml/spark-salesforce"
 
@@ -46,7 +50,6 @@ libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.11.136"
 
 //spAppendScalaVersion := true
 
-//sparkComponents += "sql"
 
 //publishMavenStyle := true
 
@@ -92,5 +95,3 @@ libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.11.136"
 //        <url>http://www.springml.com</url>
 //      </developer>
 //    </developers>)
-
-

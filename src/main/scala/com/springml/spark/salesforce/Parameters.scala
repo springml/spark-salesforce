@@ -20,10 +20,11 @@ private[salesforce] object Parameters {
     "login" -> "https://login.salesforce.com",
     "version" -> "36.0",
     "csvnullstring" -> "@NULL@",
+    "wholeFile" -> "false",
+    "quote" -> "\"",
+    "escape" -> "\"",
     "overwrite" -> "false",
     "diststyle" -> "EVEN",
-//    "preactions" -> ";",
-//    "postactions" -> ";",
     "pageSize" -> "1000",
     "sampleSize" -> "1000",
     "maxRetry" -> "5",
@@ -183,6 +184,15 @@ private[salesforce] object Parameters {
     def password = parameters.get("password").getOrElse(sys.env.get("SF_PASSWORD").get);
 
     def queryAll = parameters.get("queryAll").get.toBoolean
+
+    /**
+     * Set this to true, if you have multi-line text fields on objects you are querying
+     */
+    def wholeFile = parameters.get("wholeFile").get.toBoolean
+    
+    def quote:Option[String] = parameters.get("quote") 
+
+    def escape:Option[String] = parameters.get("escape") 
 
     def version = parameters("version")
 
