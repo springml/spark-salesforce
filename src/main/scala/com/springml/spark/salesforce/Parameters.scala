@@ -134,6 +134,7 @@ private[salesforce] object Parameters {
      */
     def createPerQueryTempDir(): String = Utils.makeTempPath(rootTempDir)
 
+    def createPerQueryTempDir(prefix:String): String = Utils.makeTempPath(rootTempDir,prefix)
     /**
      * User and password to be used to authenticate to SalesForce
      */

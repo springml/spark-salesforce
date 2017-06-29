@@ -379,6 +379,14 @@ object Utils extends Serializable {
     lastTempPathGenerated = Utils.joinUrls(tempRoot, UUID.randomUUID().toString)
     lastTempPathGenerated
   }
+  
+    /**
+   * Creates a randomly named temp directory path for intermediate data
+   */
+  def makeTempPath(tempRoot: String, prefix:String): String = {
+    lastTempPathGenerated = Utils.joinUrls(tempRoot, s"$prefix-${UUID.randomUUID().toString}")
+    lastTempPathGenerated
+  }
 
   /**
    * Joins prefix URL a to path suffix b, and appends a trailing /, in order to create

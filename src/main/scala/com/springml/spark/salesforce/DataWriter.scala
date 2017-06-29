@@ -23,6 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SaveMode
 
+
 /**
  * Writer responsible for writing the objects into Salesforce Wave
  * It uses Partner External Metadata SOAP API to write the dataset

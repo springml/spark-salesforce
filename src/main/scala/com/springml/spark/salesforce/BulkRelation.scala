@@ -50,8 +50,8 @@ private[salesforce] case class BulkRelation(
    * Bulk API
    */
   val bulkAPI = APIFactory.getInstance.bulkAPI(params.user, params.password, params.login, params.version)
-  val tempDir = params.createPerQueryTempDir()
   private val name = params.objectName
+  val tempDir = params.createPerQueryTempDir(name)
   override def toString: String = s"BulkRelation($name)"
   var job: JobInfo = _
   val batchResultPromise = Promise[BatchResult]()
@@ -107,7 +107,7 @@ private[salesforce] case class BulkRelation(
     import collection.JavaConverters._
     val batches = bulkAPI.getBatchInfoList(job.getId).getBatchInfo.asScala.toList
     logger.trace(s"Waiting for bulk query batches to be ready! Will recheck every 10 seconds")
-    patientBatchList(params.maxBatchRetry * 4, batches)
+    patientBatchList(params.maxBatchRetry * 6, batches)
   }
 
   @annotation.tailrec

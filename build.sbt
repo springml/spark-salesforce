@@ -20,7 +20,8 @@ resolvers += "local m2" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
 
 
 libraryDependencies ++= {
-	val sparkVersion =  "2.2.1-SNAPSHOT"
+	//val sparkVersion =  "2.2.1-SNAPSHOT"
+	val sparkVersion =  "2.1.1"
 	Seq(
 		"com.force.api" % "force-wsc" % "39.0.0",
 		"com.force.api" % "force-partner-api" % "39.0.0",
@@ -28,6 +29,7 @@ libraryDependencies ++= {
 		"org.mockito"   % "mockito-core" % "2.7.1",
 		"org.scalatest" % "scalatest_2.11" % "3.0.0",
 		"com.force.api" % "force-metadata-api" % "39.0.0",
+		"org.json" % "json" % "20160810",
 		"com.fasterxml.jackson.core"   % "jackson-core"               % "2.8.7",
 		"com.fasterxml.jackson.core"   % "jackson-databind"           % "2.8.7",
 		"com.fasterxml.jackson.core"   % "jackson-annotations"        % "2.8.7",
@@ -38,7 +40,7 @@ libraryDependencies ++= {
 		"com.amazonaws" % "aws-java-sdk" % "1.11.140",
 		"org.apache.spark" %% "spark-core" % sparkVersion % "provided",
 		"org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
-	)
+	) 
 }
 
 
