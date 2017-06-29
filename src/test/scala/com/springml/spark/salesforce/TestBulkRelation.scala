@@ -1,3 +1,20 @@
+/*
+ * Copyright 2015 - 2017, oolong  
+ * Contributors  :
+ * 		Kagan Turgut, Oolong Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.springml.spark.salesforce
 
 import org.scalatest.{ FunSuite, BeforeAndAfterEach }
@@ -36,15 +53,15 @@ class TestBulkRelation extends FunSuite with org.scalatest.mockito.MockitoSugar 
     //    when(params.rootTempDir) thenReturn ("s3n://oolong.staging/temp")
     //    when(params.bulk) thenReturn (true)
     //    when(params.bulk) thenReturn (true)
-    //    when(params.user) thenReturn ("james@ooequipment.com")
-    //    when(params.password) thenReturn ("oolong200molbX310CHFjJHR8djRKpiB1")
+    //    when(params.user) thenReturn ("my_salesforce_username")
+    //    when(params.password) thenReturn ("my_salesforce_password")
 
     spark = SparkSession.builder()
       .master("local")
       .appName("Test Bulk Relation")
       .getOrCreate()
-    spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", "AKIAJZ4OFWMBV2MQCB2A")
-    spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", "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")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", "my_aws_access_key_id")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", "my_aws_secret_access_key")
   
   }
 
@@ -56,9 +73,9 @@ class TestBulkRelation extends FunSuite with org.scalatest.mockito.MockitoSugar 
       val dfr = spark.sqlContext.
         read.
         format("com.springml.spark.salesforce").
-        option("username", "james@ooequipment.com").
-        option("password", "oolong200molbX310CHFjJHR8djRKpiB1").
-        option("tempdir", "s3n://oolong.staging/temp").
+        option("username", "sfuser").
+        option("password", "sfpassword").
+        option("tempdir", "s3n://my.staging/temp").
         option("soql", soql).
         option("bulk", true).
         option("version", "36.0").

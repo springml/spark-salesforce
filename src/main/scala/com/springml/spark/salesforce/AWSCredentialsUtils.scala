@@ -1,8 +1,9 @@
-package com.springml.spark.salesforce
-
-/* 
- * Copyright 2015 Databricks
- *
+/*
+ * Copyright 2016 - 2017, oolong
+ * Inspired by and partially copied from the Databricks Redshift implementation, which has Databricks copyright.
+ * Author      :  Kagan Turgut, Oolong Inc.
+ * Contributors: 
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +15,10 @@ package com.springml.spark.salesforce
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
  */
+
+package com.springml.spark.salesforce
 
 
 import java.net.URI

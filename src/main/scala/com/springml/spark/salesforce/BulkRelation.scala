@@ -1,3 +1,21 @@
+/*
+ * Copyright 2016 - 2017, oolong  
+ * Author      :  Kagan Turgut, Oolong Inc.
+ * Contributors: 
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.springml.spark.salesforce
 
 import java.sql.{ Date, Timestamp }
@@ -50,17 +68,49 @@ private[salesforce] case class BulkRelation(
    * Bulk API
    */
   val bulkAPI = APIFactory.getInstance.bulkAPI(params.user, params.password, params.login, params.version)
+/**
+ * Name of the salesforce object
+ */
   private val name = params.objectName
+  
+  /**
+   * Temp location where bulk query batch results will be stored. Expecting S3 folder.
+   * Creates a unique folder name for each bulk job, the folder name is prefixed by the object name.
+   */
   val tempDir = params.createPerQueryTempDir(name)
+  
   override def toString: String = s"BulkRelation($name)"
+  
+  /**
+   * Salesforce bulk API job
+   */
   var job: JobInfo = _
+  
+  /**
+   * Promise that returns the first successful batch result when batches are processed in parallel
+   */
   val batchResultPromise = Promise[BatchResult]()
+  
+  /**
+   * Future of the promise
+   */
   val promiseFuture = batchResultPromise.future
+  
+  /**
+   * First successfull batch result is captured and used to compute the sample RDD
+   */
   var sampleBatchResult: Option[BatchResult] = None
+  
+  /**
+   * S3 Client
+   */
   var s3Client: AmazonS3Client = _
 
   init()
 
+  /**
+   * Various initializations are done here, including creation of the bulk api job.
+   */
   def init() = {
     if (sqlContext != null) {
       Utils.assertThatFileSystemIsNotS3BlockFileSystem(
@@ -78,6 +128,8 @@ private[salesforce] case class BulkRelation(
     val batch = bulkAPI.addBatch(job.getId, params.soql.get)
     if (batch.isFailed())
       throw new IllegalArgumentException(s"Bulk API Batch failed: ${batch.getStateMessage}")
+    
+    // when first batch is successfully processed, sampleBatchResult is set.
     promiseFuture onSuccess {
       case result =>
         { logger.trace("Computed Sample RDD from first batch."); sampleBatchResult = Some(result); sampleBatchResult; }
@@ -85,10 +137,13 @@ private[salesforce] case class BulkRelation(
   }
 
   /**
-   * Sample
+   * Sample RDD, computed lazily
    */
   lazy val sampleRDD: RDD[Array[String]] = computeSampleRDD
 
+  /**
+   * sampleRDD is constructed from the first batch result
+   */
   private def computeSampleRDD: RDD[Array[String]] = {
     runBulkOperation()
     for (br: BatchResult <- sampleBatchResult) {
@@ -100,9 +155,12 @@ private[salesforce] case class BulkRelation(
 
   ////////////////////  BATCH PROCESSING ///////////////////////////////
   /**
-   * Batch Processing
+   * List of BatchInfo's computed lazily.
+   * This method does not return until one of those batches is in 'Completed' state or we run out of number of retries.
+   * It sleeps 10 seconds between each retry.
+   * We have experienced that for large tables > 17M rows, it may take more than 30 minutes for batches to be ready, 
+   * thus this high number of default retries
    */
-
   private def batchList: List[BatchInfo] = {
     import collection.JavaConverters._
     val batches = bulkAPI.getBatchInfoList(job.getId).getBatchInfo.asScala.toList
@@ -110,6 +168,9 @@ private[salesforce] case class BulkRelation(
     patientBatchList(params.maxBatchRetry * 6, batches)
   }
 
+  /**
+   * Recursively check the batch statuses for the job, until one of those batches is in "Completed" state 
+   */
   @annotation.tailrec
   private def patientBatchList(n: Int, batches: List[BatchInfo]): List[BatchInfo] = {
     if (n < 0) return batches
@@ -125,6 +186,12 @@ private[salesforce] case class BulkRelation(
     }
   }
 
+  /**
+   * Returns a list of batch processor Futures, which will do the actual work of processing each batch.
+   * Futures are wrapped inside a retry block. 
+   * Retry block deals with general errors encountered while processing, while the actual processBatch method recursively deals 
+   * with the batch status readiness type issues.
+   */
   lazy val batchProcessors: Seq[Future[BatchResult]] = {
     val batches = batchList;
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3Client)
@@ -134,6 +201,11 @@ private[salesforce] case class BulkRelation(
     filtered.map(bi => Future { retry(params.maxFutureRetry, 20 second) { processBatch(params.maxBatchRetry, bi) } })
   }
 
+  /**
+   * Process an individual batch,
+   * recursively retry if the batch is not in "Completed" state to be processed, waiting 30 seconds between retries.
+   * Also watch for memory usage, and defer the processing if memory is going low. 
+   */
   @annotation.tailrec
   final def processBatch(n: Int, bi: BatchInfo): BatchResult = {
     if (n < 0)
@@ -154,6 +226,7 @@ private[salesforce] case class BulkRelation(
             stream = r._1
           }
         }
+        // save the batch result to temp folder.
         val fn = s"$tempDir${job.getId}/${bi.getId}"
         Utils.saveS3File(fn, s3Client, stream, memUsage());
         new BatchResult(bi.getJobId, bi.getId, fn)
@@ -171,6 +244,9 @@ private[salesforce] case class BulkRelation(
     }
   }
 
+  /**
+   * Keep track of the memory usage
+   */
   private def memUsage(msg: String = "") = {
     val memoryBean = ManagementFactory.getMemoryMXBean()
     val heapUsage = memoryBean.getHeapMemoryUsage();
@@ -181,6 +257,9 @@ private[salesforce] case class BulkRelation(
     (maxMemory, usedMemory)
   }
 
+  /**
+   * Throws out of memory error. The outer processor may choose to retry this batch, if the conditions improve
+   */
   @throws(classOf[OutofMemoryWithRetry])
   private def outOfMemory(e: OutOfMemoryError, batch: BatchInfo) = {
     val mem = memUsage()
@@ -192,7 +271,7 @@ private[salesforce] case class BulkRelation(
   }
 
   /**
-   * Retry the function call n number of times, with exponentially increasing pauses in between non-fatal failures
+   * Recursively, retry the function call n number of times, with exponentially increasing pauses in between non-fatal failures
    */
   @annotation.tailrec
   private def retry[T](n: Int, pause: Duration)(fn: => T): T = {
@@ -209,6 +288,7 @@ private[salesforce] case class BulkRelation(
 
   /**
    * Completes upon all Futures complete or upon first failure.
+   * This method is meant to be only called once. See the lock used in runBulkOperation method
    * Sets the sample result from the first success
    */
   @annotation.tailrec
@@ -239,6 +319,9 @@ private[salesforce] case class BulkRelation(
     }
   }
 
+  /**
+   * Header row of the sample batch results 
+   */
   private def header: Array[String] = {
     for (br <- sampleBatchResult) {
       return br.getHeader.map(_.toString).toArray
@@ -246,6 +329,9 @@ private[salesforce] case class BulkRelation(
     Array()
   }
 
+  /**
+   * Schema of the RDD
+   */
   override def schema: StructType = {
     // ScalaReflection.schemaFor[Batch].dataType.asInstanceOf[StructType]
     if (userSchema.isDefined) userSchema.get
@@ -262,12 +348,9 @@ private[salesforce] case class BulkRelation(
     }
   }
 
-  //  def s3Client: AmazonS3Client = {
-  //    logger.trace("Creating S3 Client")
-  //    val creds = AWSCredentialsUtils.load(params, sqlContext.sparkContext.hadoopConfiguration);
-  //    s3ClientFactory(creds)
-  //  }
-
+  /**
+   * Acts as a semaphore lock to ensure that runBulkOperation is reentrant and the actual execution is only done once.
+   */
   private val LOCK = new ReentrantLock
 
   /**
@@ -307,6 +390,9 @@ private[salesforce] case class BulkRelation(
     }
   }
 
+  /**
+   * Returns the rdd that is created by unioning of all the temporary batch results stored in temp folder craeated for the bulk job.
+   */
   override def buildScan(): RDD[Row] = {
     logger.trace("In BuildScan. Before running Bulk Operation.");
 

@@ -1,5 +1,8 @@
 /*
- * Copyright 2015 springml
+ * Copyright 2015 - 2017, springml, oolong  
+ * Contributors  :
+ * 	  Samual Alexander, springml  
+ * 		Kagan Turgut, Oolong Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
