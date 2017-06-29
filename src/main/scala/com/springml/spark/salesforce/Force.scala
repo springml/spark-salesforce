@@ -1,6 +1,6 @@
 /*
  * Copyright 2015 - 2017, oolong  
- * Author  : Kagan Turgut, Oolong Inc.
+ * Author  : Kagan Turgut 
  * Contributors:
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +41,9 @@ class Force (val accessToken:String, val apiVersion:String, val baseUrl:String) 
   
   @transient private val logger = Logger.getLogger(classOf[Force])
   
+  /**
+   * HTTP Get request
+   */
   def httpGet(
     accessToken: String,
     endpoint: String,
@@ -80,6 +83,9 @@ class Force (val accessToken:String, val apiVersion:String, val baseUrl:String) 
       }
   }
 
+  /**
+   * SalesForce object as JSON
+   */
   def describeObject(objName: String): JSONObject = {
     val describeObjUrl = s"$baseUrl/services/data/v${apiVersion}/sobjects/${objName}/describe"
     val describeObj = httpGet(accessToken, describeObjUrl)
@@ -89,6 +95,9 @@ class Force (val accessToken:String, val apiVersion:String, val baseUrl:String) 
   }
 
  
+  /**
+   * Get list of objects
+   */
   def getObjectList() = {
 
     val queryEndpoint = s"$baseUrl/services/data/v$apiVersion/sobjects"
@@ -97,6 +106,9 @@ class Force (val accessToken:String, val apiVersion:String, val baseUrl:String) 
   }
   
 
+  /**
+   * Get list of object names
+   */
   def getObjectNames(ignore:Seq[String] = Seq()):List[String] = {
     
     val objList = getObjectList();
@@ -115,6 +127,7 @@ class Force (val accessToken:String, val apiVersion:String, val baseUrl:String) 
     names
   }
   /**
+   * Watch for quota usage
    * (used, remaining, percent used)
    */
   def getSalesforceQuotaUsage():(Integer, Integer,Integer) = {
