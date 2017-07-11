@@ -337,7 +337,8 @@ object Utils extends Serializable {
           // Note: this only checks that there is an active rule which matches the temp directory;
           // it does not actually check that the rule will delete the files. This check is still
           // better than nothing, though, and we can always improve it later.
-          rule.getStatus == BucketLifecycleConfiguration.ENABLED && key.startsWith(rule.getPrefix)
+          // TODO 
+          rule.getStatus == BucketLifecycleConfiguration.ENABLED && key!=null && key.startsWith(rule.getPrefix)
         }
       }
       if (!hasMatchingBucketLifecycleRule) {
@@ -354,8 +355,8 @@ object Utils extends Serializable {
   }
 
   var nSaving = 0;
-  
-  def saveS3File(fileName: String, s3Client: AmazonS3Client, input: java.io.InputStream, mem:(Long,Long)): Unit = {
+
+  def saveS3File(fileName: String, s3Client: AmazonS3Client, input: java.io.InputStream, mem: (Long, Long)): Unit = {
     val s3URI = createS3URI(Utils.fixS3Url(fileName))
     val bucket = s3URI.getBucket
     val filename = s3URI.getKey
@@ -364,10 +365,10 @@ object Utils extends Serializable {
     logger.trace(s"--> n:$nSaving Starting to save $filename")
     val usageRatio = mem._1 / mem._2
     if (usageRatio > 70) {
-    val multiplier = (1/(110-usageRatio))
-    logger.trace(s"Memory Usage ratio $usageRatio, multiplier $multiplier")
-      val waitTime = Math.min(5000 * nSaving * (1/(110-usageRatio)), 180000) // wait up to 3 minutes
-      logger.error(s"Will sleep ${waitTime/1000} Seconds before attempting to save $filename. Memory usage $usageRatio")
+      val multiplier = (1 / (110 - usageRatio))
+      logger.trace(s"Memory Usage ratio $usageRatio, multiplier $multiplier")
+      val waitTime = Math.min(5000 * nSaving * (1 / (110 - usageRatio)), 180000) // wait up to 3 minutes
+      logger.error(s"Will sleep ${waitTime / 1000} Seconds before attempting to save $filename. Memory usage $usageRatio")
       Thread.sleep(waitTime.toLong)
     }
     s3Client.putObject(bucket, filename, input, new ObjectMetadata())
@@ -382,11 +383,11 @@ object Utils extends Serializable {
     lastTempPathGenerated = Utils.joinUrls(tempRoot, UUID.randomUUID().toString)
     lastTempPathGenerated
   }
-  
-    /**
+
+  /**
    * Creates a randomly named temp directory path for intermediate data
    */
-  def makeTempPath(tempRoot: String, prefix:String): String = {
+  def makeTempPath(tempRoot: String, prefix: String): String = {
     lastTempPathGenerated = Utils.joinUrls(tempRoot, s"$prefix-${UUID.randomUUID().toString}")
     lastTempPathGenerated
   }
@@ -418,7 +419,7 @@ object Utils extends Serializable {
   import com.springml.salesforce.wave.model.BatchResult
   import java.io.InputStreamReader
 
-  def sampleResult(stream: InputStream): (InputStream,BatchResult) = {
+  def sampleResult(stream: InputStream): (InputStream, BatchResult) = {
     val result = new BatchResult()
     val bufferSize = 40000
     val reader = new BufferedReader(new InputStreamReader(stream));
@@ -437,7 +438,7 @@ object Utils extends Serializable {
       var row: String = ""
       while (row != null && (charsRead + 3 * avgLineLength < bufferSize / 2) && n < 200) {
         row = reader.readLine();
-       // println(row);
+        // println(row);
         n += 1
         if (row != null) {
           val size = row.length();

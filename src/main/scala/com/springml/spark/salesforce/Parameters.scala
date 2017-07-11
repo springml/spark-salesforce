@@ -19,7 +19,7 @@ package com.springml.spark.salesforce
 
 import com.amazonaws.auth.{ AWSCredentialsProvider, BasicSessionCredentials }
 import org.apache.log4j.Logger
-
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 /**
  * All user-specifiable parameters for spark-redshift, along with their validation rules and
  * defaults.
@@ -52,7 +52,7 @@ private[salesforce] object Parameters {
     "replaceDatasetNameWithId" -> "false",
     "upsert" -> "false",
     "monitorJob" -> "false",
-    "aws_iam_role" -> "arn:aws:iam::77777777:role/myS3Role")
+    "aws_iam_role" -> "arn:aws:iam::699237797221:role/myRedshiftRole")
 
   val VALID_TEMP_FORMATS = Set("AVRO", "CSV", "CSV GZIP")
 
@@ -82,13 +82,17 @@ private[salesforce] object Parameters {
       throw new IllegalArgumentException("Either one of 'saql' or 'soql' is expected for creating dataframe")
     }
 
-    MergedParameters(DEFAULT_PARAMETERS ++ userParameters, save)
+    var mergedParameters = new CaseInsensitiveMap(DEFAULT_PARAMETERS ++ userParameters)
+
+    MergedParameters(mergedParameters, save)
   }
 
   /**
-   * Adds validators and accessors to string map
+   * Adds validators and accessors to string map.
+   * Map is case insensitive.
    */
   case class MergedParameters(parameters: Map[String, String], save: Boolean) {
+    
 
     private val logger = Logger.getLogger(classOf[MergedParameters])
 
