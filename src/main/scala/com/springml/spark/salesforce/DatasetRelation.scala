@@ -51,7 +51,7 @@ case class DatasetRelation(
   val records = read()
 
   def read(): java.util.List[java.util.Map[String, String]] = {
-    var records: java.util.List[java.util.Map[String, String]]= null;
+    var records: java.util.List[java.util.Map[String, String]]= null
     // Query getting executed here
     if (waveAPI != null) {
       records = queryWave()
@@ -63,7 +63,7 @@ case class DatasetRelation(
   }
 
   private def queryWave(): java.util.List[java.util.Map[String, String]] = {
-    var records: java.util.List[java.util.Map[String, String]]= null;
+    var records: java.util.List[java.util.Map[String, String]]= null
 
     var saql = query
     if (replaceDatasetNameWithId) {
@@ -112,7 +112,7 @@ case class DatasetRelation(
   }
 
   private def querySF(): java.util.List[java.util.Map[String, String]] = {
-      var records: java.util.List[java.util.Map[String, String]]= null;
+      var records: java.util.List[java.util.Map[String, String]]= null
 
       var resultSet = forceAPI.query(query)
       records = resultSet.filterRecords()
@@ -169,7 +169,7 @@ case class DatasetRelation(
     // Constructing RDD from records
     val sampleRowArray = new Array[Array[String]](getSampleSize)
     for (i <- 0 to getSampleSize - 1) {
-      val row = records(i);
+      val row = records(i)
       logger.debug("rows size : " + row.size())
       val fieldArray = new Array[String](row.size())
 
@@ -237,7 +237,7 @@ case class DatasetRelation(
     if (userSchema != null) {
       userSchema
     } else if (records == null || records.size() == 0) {
-      new StructType();
+      new StructType()
     } else if (inferSchema) {
       InferSchema(sampleRDD, header)
     } else {

@@ -15,21 +15,11 @@
  */
 package com.springml.spark.salesforce
 
-import com.sforce.soap.partner.sobject.SObject
-import com.sforce.soap.partner.{Connector, PartnerConnection}
-import com.sforce.ws.ConnectorConfig
-import com.springml.spark.salesforce.Utils._
-import org.apache.log4j.Logger
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider}
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
-import com.springml.spark.salesforce.metadata.MetadataConstructor
-import org.apache.spark.sql.sources.RelationProvider
-import org.apache.spark.sql.sources.SchemaRelationProvider
 import com.springml.salesforce.wave.api.APIFactory
-import org.apache.spark.sql.DataFrame
-import scala.io.Source
+import org.apache.log4j.Logger
+import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, RelationProvider, SchemaRelationProvider}
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 
 /**
  * Default source for Salesforce wave data source.
@@ -75,7 +65,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val replaceDatasetNameWithId = parameters.getOrElse("replaceDatasetNameWithId", "false")
 
     validateMutualExclusive(saql, soql, "saql", "soql")
-    val inferSchemaFlag = flag(inferSchema, "inferSchema");
+    val inferSchemaFlag = flag(inferSchema, "inferSchema")
 
     if (saql.isDefined) {
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
@@ -142,7 +132,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       mode: SaveMode,
       data: DataFrame) {
 
-    val csvHeader = Utils.csvHeadder(data.schema);
+    val csvHeader = Utils.csvHeadder(data.schema)
     logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
     logger.info("Repartitioning rdd for 10mb partitions")
     val repartitionedRDD = Utils.repartition(data.rdd)
@@ -231,13 +221,13 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
   }
 
   private def param(parameters: Map[String, String], envName: String, paramName: String) : String = {
-    val envProp = sys.env.get(envName);
+    val envProp = sys.env.get(envName)
     if (envProp != null && envProp.isDefined) {
       return envProp.get
     }
 
     parameters.getOrElse(paramName,
-        sys.error(s"""Either '$envName' has to be added in environment or '$paramName' must be specified for salesforce package."""));
+        sys.error(s"""Either '$envName' has to be added in environment or '$paramName' must be specified for salesforce package."""))
   }
 
   private def flag(paramValue: String, paramName: String) : Boolean = {

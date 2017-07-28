@@ -42,7 +42,7 @@ object Utils extends Serializable {
     val config = new ConnectorConfig()
     config.setUsername(username)
     config.setPassword(password)
-    val endpoint = if (login.endsWith("/")) (login + "services/Soap/u/" + version) else (login + "/services/Soap/u/" + version);
+    val endpoint = if (login.endsWith("/")) (login + "services/Soap/u/" + version) else (login + "/services/Soap/u/" + version)
     config.setAuthEndpoint(endpoint)
     config.setServiceEndpoint(endpoint)
     Connector.newConnection(config)
@@ -60,7 +60,7 @@ object Utils extends Serializable {
 
   def repartition(rdd: RDD[Row]): RDD[Row] = {
     val totalDataSize = getTotalSize(rdd)
-    val maxBundleSize = 1024 * 1024 * 10l;
+    val maxBundleSize = 1024 * 1024 * 10l
     var partitions = 1
     if (totalDataSize > maxBundleSize) {
       partitions = Math.round(totalDataSize / maxBundleSize) + 1
@@ -72,8 +72,8 @@ object Utils extends Serializable {
 
   def getTotalSize(rdd: RDD[Row]): Long = {
     // This can be fetched as optional parameter
-    val NO_OF_SAMPLE_ROWS = 10;
-    val totalRows = rdd.count();
+    val NO_OF_SAMPLE_ROWS = 10
+    val totalRows = rdd.count()
     var totalSize = 0l
 
     if (totalRows > NO_OF_SAMPLE_ROWS) {
@@ -119,7 +119,7 @@ object Utils extends Serializable {
   }
 
   def metadataConfig(usersMetadataConfig: Option[String]) = {
-    var systemMetadataConfig = readMetadataConfig();
+    var systemMetadataConfig = readMetadataConfig()
     if (usersMetadataConfig != null && usersMetadataConfig.isDefined) {
       val usersMetadataConfigMap = readJSON(usersMetadataConfig.get)
       systemMetadataConfig = systemMetadataConfig ++ usersMetadataConfigMap
