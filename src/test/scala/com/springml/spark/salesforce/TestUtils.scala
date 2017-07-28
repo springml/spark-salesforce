@@ -15,23 +15,19 @@
  */
 package com.springml.spark.salesforce
 
-import org.apache.spark.sql.{Row, SQLContext}
-import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.sql.types.{StructType, StructField}
-import org.apache.spark.sql.types.{StringType, IntegerType, LongType, FloatType, DateType}
-import org.scalatest.{FunSuite, BeforeAndAfterEach}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SparkSession}
+import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 class TestUtils extends FunSuite with BeforeAndAfterEach {
-  var sparkConf: SparkConf = _
-  var sc: SparkContext = _
+  var ss: SparkSession = _
 
   override def beforeEach() {
-    sparkConf = new SparkConf().setMaster("local").setAppName("data repartition")
-    sc = new SparkContext(sparkConf)
+    ss = SparkSession.builder().master("local").appName("Test Utils").getOrCreate()
   }
 
   override def afterEach() {
-    sc.stop()
+    ss.stop()
   }
 
   test("Test Metadata Configuration") {
@@ -72,53 +68,37 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
   }
 
   test("Test repartition for in memory RDD") {
-    val sqlContext = new SQLContext(sc)
-
     val inMemoryData = (0 to 2000).map(value => {
       val rowValues = Array(value, value + 1, value + 2, value + 3).map(value => value.toString)
       Row.fromSeq(rowValues)
     })
 
-    val inMemoryRDD = sc.makeRDD(inMemoryData)
+    val inMemoryRDD = ss.sparkContext.makeRDD(inMemoryData)
     val columnNames = List("c1", "c2", "c3", "c4")
     val columnStruct = columnNames.map(colName => StructField(colName, StringType, true))
     val schema = StructType(columnStruct)
-    val inMemoryDF = sqlContext.createDataFrame(inMemoryRDD, schema)
+    val inMemoryDF = ss.sqlContext.createDataFrame(inMemoryRDD, schema)
 
     val repartitionDF = Utils.repartition(inMemoryRDD)
     assert(repartitionDF.partitions.length == 1)
   }
 
   test("Test repartition for local CSV file with size less than 10 MB") {
-    val sqlContext = new SQLContext(sc)
-
     val csvURL= getClass.getResource("/ad-server-data-formatted.csv")
     val csvFilePath = csvURL.getPath
-    val csvDF = sqlContext.
-                        read.
-                        format("com.databricks.spark.csv").
-                        option("header", "true").
-                        load(csvFilePath)
+    val csvDF = ss.read.option("header", "true").csv(csvFilePath)
 
     val repartitionDF = Utils.repartition(csvDF.rdd)
     assert(repartitionDF.partitions.length == 1)
-    sc.stop
   }
 
   test("Test repartition for local CSV file with size > 10 MB and < 20 MB") {
-    val sqlContext = new SQLContext(sc)
-
     val csvURL= getClass.getResource("/minified_GDS_90.csv")
     val csvFilePath = csvURL.getPath
-    val csvDF = sqlContext.
-                        read.
-                        format("com.databricks.spark.csv").
-                        option("header", "true").
-                        load(csvFilePath)
+    val csvDF = ss.read.option("header", "true").csv(csvFilePath)
 
     val repartitionDF = Utils.repartition(csvDF.rdd)
     assert(repartitionDF.partitions.length == 2)
-    sc.stop
   }
 
   test("Check whether CSV Header constructed properly") {

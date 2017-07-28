@@ -29,7 +29,6 @@ resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
-libraryDependencies += "com.databricks" %% "spark-csv" % "1.3.0"
 libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.4.4"
 libraryDependencies += "org.codehaus.woodstox" % "woodstox-core-asl" % "4.4.0"
 
@@ -37,8 +36,6 @@ libraryDependencies += "org.codehaus.woodstox" % "woodstox-core-asl" % "4.4.0"
 spName := "springml/spark-salesforce"
 
 spAppendScalaVersion := true
-
-// spDependencies += "databricks/spark-csv:1.3.0"
 
 sparkVersion := "2.1.0"
 
