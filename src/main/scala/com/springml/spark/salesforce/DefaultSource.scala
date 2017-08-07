@@ -15,6 +15,8 @@
  */
 package com.springml.spark.salesforce
 
+import java.text.SimpleDateFormat
+
 import com.springml.salesforce.wave.api.APIFactory
 import org.apache.log4j.Logger
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, RelationProvider, SchemaRelationProvider}
@@ -59,6 +61,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val sampleSize = parameters.getOrElse("sampleSize", "1000")
     val maxRetry = parameters.getOrElse("maxRetry", "5")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
+    val dateFormat = parameters.getOrElse("dateFormat", null)
     // This is only needed for Spark version 1.5.2 or lower
     // Special characters in older version of spark is not handled properly
     val encodeFields = parameters.get("encodeFields")
@@ -71,7 +74,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
           resultVariable, pageSize.toInt, sampleSize.toInt,
-          encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean)
+          encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
     } else {
       if (replaceDatasetNameWithId.toBoolean) {
         logger.warn("Ignoring 'replaceDatasetNameWithId' option as it is not applicable to soql")
@@ -81,7 +84,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
       DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
           null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag,
-          replaceDatasetNameWithId.toBoolean)
+          replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
     }
 
   }
@@ -228,6 +231,15 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
 
     parameters.getOrElse(paramName,
         sys.error(s"""Either '$envName' has to be added in environment or '$paramName' must be specified for salesforce package."""))
+  }
+
+  private def sdf(dateFormat: String) : SimpleDateFormat = {
+    var simpleDateFormat : SimpleDateFormat = null
+    if (dateFormat != null && !dateFormat.isEmpty) {
+      simpleDateFormat = new SimpleDateFormat(dateFormat)
+    }
+
+    simpleDateFormat
   }
 
   private def flag(paramValue: String, paramName: String) : Boolean = {

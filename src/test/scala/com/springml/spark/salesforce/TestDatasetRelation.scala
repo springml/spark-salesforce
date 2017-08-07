@@ -1,24 +1,22 @@
 package com.springml.spark.salesforce
 
-import java.util.ArrayList
-import java.util.HashMap
-import scala.collection.JavaConversions._
-import org.scalatest.{ FunSuite, BeforeAndAfterEach}
-import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import org.mockito.Matchers._
-import com.springml.salesforce.wave.api.WaveAPI
-import com.springml.salesforce.wave.model.{ QueryResult, Results}
+import java.text.SimpleDateFormat
+import java.util.{ArrayList, HashMap}
+
+import com.springml.salesforce.wave.api.{ForceAPI, WaveAPI}
+import com.springml.salesforce.wave.model.{QueryResult, Results, SOQLResult}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{ StructField, IntegerType, StructType, StringType}
-import org.apache.spark.{ SparkConf, SparkContext}
-import org.apache.spark.sql.{ SQLContext, Row}
-import com.springml.salesforce.wave.api.ForceAPI
-import com.springml.salesforce.wave.model.SOQLResult
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.{SparkConf, SparkContext}
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
 /**
- * Test DatasetRelation with schema and without schema
- */
+  * Test DatasetRelation with schema and without schema
+  */
 class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfterEach {
   val waveAPI = mock[WaveAPI]
   val forceAPI = mock[ForceAPI]
@@ -57,6 +55,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val record: java.util.Map[String, String] = new HashMap[String, String]
     record.put("count", "12")
     record.put("device_type", "Android")
+    record.put("created_date", "2017-08-04T16:45:30")
     records.add(record)
     results.setRecords(records)
 
@@ -118,7 +117,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test read without schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false, false)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false,
+      false, null)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -128,11 +128,13 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val sqlContext = new SQLContext(sc)
     val countField = StructField("count", IntegerType, true)
     val deviceTypeField = StructField("device_type", StringType, true)
+    val createdTypeField = StructField("created_date", TimestampType, true)
 
-    val fields = Array[StructField] (countField, deviceTypeField)
+    val fields = Array[StructField] (countField, deviceTypeField, createdTypeField)
     val schema = StructType(fields)
 
-    val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext, null, 0, 100, null, false, false)
+    val dr = DatasetRelation(waveAPI, null, saql, schema, sqlContext, null, 0, 100, null, false,
+      false, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"))
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -142,7 +144,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val sqlContext = new SQLContext(sc)
     var resultVariable = None: Option[String]
     resultVariable = Some("q")
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, resultVariable, 2, 100, null, false, false)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, resultVariable, 2, 100, null,
+      false, false, null)
     val rdd = dr.buildScan()
     assert(rdd != null)
     // 2 - During initial read
@@ -153,7 +156,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test read using soql without schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext, null, 0, 100, null, false, false)
+    val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext, null, 0, 100, null, false,
+      false, null)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -167,7 +171,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val fields = Array[StructField] (countField, deviceTypeField)
     val schema = StructType(fields)
 
-    val dr = DatasetRelation(null, forceAPI, soql, schema, sqlContext, null, 0, 100, null, false, false)
+    val dr = DatasetRelation(null, forceAPI, soql, schema, sqlContext, null, 0, 100, null, false,
+      false, null)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -175,7 +180,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   test ("test infer schema") {
     val sqlContext = new SQLContext(sc)
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, true, false)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, true,
+      false, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"))
 
     val inferedSchema = dr.schema
     print("inferedSchema  : " + inferedSchema)
@@ -186,6 +192,10 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     val deviceTypeField = inferedSchema.apply("device_type")
     print("Device Type field Data Type " + deviceTypeField.dataType)
     assert(StringType == deviceTypeField.dataType)
+
+    val createdDateField = inferedSchema.apply("created_date")
+    print("Created Date field Data Type " + createdDateField.dataType)
+    assert(TimestampType == createdDateField.dataType)
 
     sc.stop()
   }
@@ -203,7 +213,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = foreach q generate count() as 'count';
                   q = limit q 2000;"""
 
-    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true, null)
     val modSaql = dr.replaceDatasetNameWithId(saql, 0)
 
     assert(expectedSaql.equals(modSaql))
@@ -219,8 +229,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = load "Products";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
-                  q = limit q 2000;
-                  """
+                  q = limit q 2000;"""
 
     val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
                   q = group q by all;
@@ -229,10 +238,9 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = load "0FbB00000000Uf3KAE/0FcB0000000FHWdKAO";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
-                  q = limit q 2000;
-                  """
+                  q = limit q 2000;"""
 
-    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true, null)
     val modSaql = dr.replaceDatasetNameWithId(saql, 0)
 
     assert(expectedSaql.equals(modSaql))
@@ -248,8 +256,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = load "Account";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
-                  q = limit q 2000;
-                  """
+                  q = limit q 2000;"""
 
     val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
                   q = group q by all;
@@ -258,10 +265,9 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
-                  q = limit q 2000;
-                  """
+                  q = limit q 2000;"""
 
-    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true, null)
     val modSaql = dr.replaceDatasetNameWithId(saql, 0)
 
     assert(expectedSaql.equals(modSaql))
@@ -281,8 +287,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = load "Products";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
-                  q = limit q 2000;
-                  """
+                  q = limit q 2000;"""
 
     val expectedSaql = """q = load "0FbB00000000KybKAE/0FcB0000000DGKeKAO";
                   q = group q by all;
@@ -295,10 +300,9 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = load "0FbB00000000Uf3KAE/0FcB0000000FHWdKAO";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
-                  q = limit q 2000;
-                  """
+                  q = limit q 2000;"""
 
-    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true, null)
     val modSaql = dr.replaceDatasetNameWithId(saql, 0)
 
     assert(expectedSaql.equals(modSaql))
@@ -312,7 +316,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = limit q 2000;"""
     when(waveAPI.query(saql)).thenReturn(qr)
 
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false, false)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false,
+      false, null)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -330,7 +335,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = limit q 2000;"""
     when(waveAPI.query(expectedSaql)).thenReturn(qr)
 
-    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false, true)
+    val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false,
+      true, null)
     val rdd = dr.buildScan()
     validate(rdd)
     sc.stop()
@@ -343,7 +349,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
                   q = limit q 2000;"""
     when(waveAPI.query(saql)).thenReturn(qr)
 
-    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true)
+    val dr = DatasetRelation(waveAPI, null, saql, null, null, null, 0, 100, null, true, true, null)
     val modSaql = dr.replaceDatasetNameWithId(saql, 0)
 
     assert(saql.equals(modSaql))

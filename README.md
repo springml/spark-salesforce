@@ -50,6 +50,7 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 * `soql`: (Optional) SOQL query to used to query Salesforce Object. Mandatory for reading Salesforce Object like Opportunity
 * `version`: (Optional) Salesforce API Version. Default 35.0
 * `inferSchema`: (Optional) Inferschema from the query results. Sample rows will be taken to find the datatype
+* `dateFormat`: (Optional) A string that indicates the format that follow java.text.SimpleDateFormat to use when reading timestamps. This applies to TimestampType. By default, it is null which means trying to parse timestamp by java.sql.Timestamp.valueOf()
 * `resultVariable`: (Optional) result variable used in SAQL query. To paginate SAQL queries this package will add the required offset and limit. For example, in this SAQL query `q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';` **q** is the result variable
 * `pageSize`: (Optional) Page size for each query to be executed against Salesforce Wave. Default value is 2000. This option can only be used if `resultVariable` is set
 

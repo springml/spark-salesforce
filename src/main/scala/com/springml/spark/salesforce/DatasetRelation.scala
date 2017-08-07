@@ -1,34 +1,21 @@
 package com.springml.spark.salesforce
 
 import java.math.BigDecimal
-import java.sql.Date
-import java.sql.Timestamp
-import scala.collection.JavaConversions.asScalaBuffer
-import scala.collection.JavaConversions.mapAsScalaMap
+import java.net.URLEncoder
+import java.sql.{Date, Timestamp}
+import java.text.SimpleDateFormat
+import java.util.Random
+
+import com.springml.salesforce.wave.api.{ForceAPI, WaveAPI}
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.sources.TableScan
-import org.apache.spark.sql.types.BooleanType
-import org.apache.spark.sql.types.ByteType
-import org.apache.spark.sql.types.DataType
-import org.apache.spark.sql.types.DateType
-import org.apache.spark.sql.types.DecimalType
-import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.types.FloatType
-import org.apache.spark.sql.types.IntegerType
-import org.apache.spark.sql.types.LongType
-import org.apache.spark.sql.types.ShortType
-import org.apache.spark.sql.types.StringType
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.types.TimestampType
-import com.springml.salesforce.wave.api.ForceAPI
-import com.springml.salesforce.wave.api.WaveAPI
-import java.net.URLEncoder
-import java.util.Random
+import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.sources.{BaseRelation, TableScan}
+import org.apache.spark.sql.types.{BooleanType, ByteType, DataType, DateType, DecimalType}
+import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType, ShortType}
+import org.apache.spark.sql.types.{StructField, StructType, StringType, TimestampType}
+
+import scala.collection.JavaConversions.{asScalaBuffer, mapAsScalaMap}
 
 /**
  * Relation class for reading data from Salesforce and construct RDD
@@ -44,7 +31,8 @@ case class DatasetRelation(
     sampleSize: Int,
     encodeFields: Option[String],
     inferSchema: Boolean,
-    replaceDatasetNameWithId: Boolean) extends BaseRelation with TableScan {
+    replaceDatasetNameWithId: Boolean,
+    sdf: SimpleDateFormat) extends BaseRelation with TableScan {
 
   private val logger = Logger.getLogger(classOf[DatasetRelation])
 
@@ -139,7 +127,13 @@ case class DatasetRelation(
         case _: DoubleType => fieldValue.toDouble
         case _: BooleanType => fieldValue.toBoolean
         case _: DecimalType => new BigDecimal(fieldValue.replaceAll(",", ""))
-        case _: TimestampType => Timestamp.valueOf(fieldValue)
+        case _: TimestampType => {
+          if (sdf != null) {
+            new Timestamp(sdf.parse(fieldValue).getTime)
+          } else {
+            Timestamp.valueOf(fieldValue)
+          }
+        }
         case _: DateType => Date.valueOf(fieldValue)
         case _: StringType => encode(fieldValue, fieldName)
         case _ => throw new RuntimeException(s"Unsupported data type: ${toType.typeName}")
@@ -239,7 +233,7 @@ case class DatasetRelation(
     } else if (records == null || records.size() == 0) {
       new StructType()
     } else if (inferSchema) {
-      InferSchema(sampleRDD, header)
+      InferSchema(sampleRDD, header, sdf)
     } else {
       val schemaHeader = header
       val structFields = new Array[StructField](schemaHeader.length)

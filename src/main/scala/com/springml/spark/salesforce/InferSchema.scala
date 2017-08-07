@@ -1,22 +1,15 @@
 package com.springml.spark.salesforce
 
-import java.sql.Timestamp
 import scala.util.control.Exception._
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.types.NullType
-import org.apache.spark.sql.types.DataType
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.types.StringType
-import org.apache.spark.sql.types.IntegerType
-import org.apache.spark.sql.types.LongType
-import org.apache.spark.sql.types.DoubleType
-import org.apache.spark.sql.types.TimestampType
-import org.apache.spark.sql.types.ByteType
-import org.apache.spark.sql.types.ShortType
-import org.apache.spark.sql.types.FloatType
-import org.apache.spark.sql.types.DecimalType
+
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
+
 import org.apache.log4j.Logger
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.types.{BooleanType, ByteType, DataType, DoubleType, FloatType}
+import org.apache.spark.sql.types.{IntegerType, LongType, NullType, ShortType, StringType}
+import org.apache.spark.sql.types.{StructField, StructType, TimestampType}
 
 /**
  * Utility to InferSchema from the provided Sample
@@ -30,11 +23,13 @@ object InferSchema {
    *     2. Merge row types to find common type
    *     3. Replace any null types with string type
    */
-  def apply(sampleRdd: RDD[Array[String]], header: Array[String]): StructType = {
+  def apply(sampleRdd: RDD[Array[String]], header: Array[String],
+            sdf: SimpleDateFormat): StructType = {
     logger.debug("Sample RDD Size : " + sampleRdd.count)
     logger.debug("Header : " + header)
     val startType: Array[DataType] = Array.fill[DataType](header.length)(NullType)
-    val rootTypes: Array[DataType] = sampleRdd.aggregate(startType)(inferRowType, mergeRowTypes)
+    val rootTypes: Array[DataType] = sampleRdd.aggregate(startType)(inferRowType(sdf),
+      mergeRowTypes)
 
     val structFields = header.zip(rootTypes).map { case (thisHeader, rootType) =>
       StructField(thisHeader, rootType, nullable = true)
@@ -43,12 +38,13 @@ object InferSchema {
     StructType(structFields)
   }
 
-  private def inferRowType(rowSoFar: Array[DataType], next: Array[String]): Array[DataType] = {
+  private def inferRowType(sdf:SimpleDateFormat)
+                          (rowSoFar: Array[DataType], next: Array[String]): Array[DataType] = {
     logger.debug("Rows so far : " + rowSoFar)
     logger.debug("Next row to be infered : " + next)
     var i = 0
     while (i < math.min(rowSoFar.length, next.length)) {
-      rowSoFar(i) = inferField(rowSoFar(i), next(i))
+      rowSoFar(i) = inferField(rowSoFar(i), next(i), sdf)
       i+=1
     }
     rowSoFar
@@ -70,16 +66,16 @@ object InferSchema {
    * Infer type of string field. Given known type Double, and a string "1", there is no
    * point checking if it is an Int, as the final type must be Double or higher.
    */
-  private def inferField(typeSoFar: DataType, field: String): DataType = {
+  private def inferField(typeSoFar: DataType, field: String, sdf: SimpleDateFormat): DataType = {
     if (field == null || field.isEmpty) {
       typeSoFar
     } else {
       typeSoFar match {
-        case NullType => tryParseInteger(field)
-        case IntegerType => tryParseInteger(field)
-        case LongType => tryParseLong(field)
-        case DoubleType => tryParseDouble(field)
-        case TimestampType => tryParseTimestamp(field)
+        case NullType => tryParseInteger(field, sdf)
+        case IntegerType => tryParseInteger(field, sdf)
+        case LongType => tryParseLong(field, sdf)
+        case DoubleType => tryParseDouble(field, sdf)
+        case TimestampType => tryParseTimestamp(field, sdf)
         case StringType => StringType
         case other: DataType =>
           throw new UnsupportedOperationException(s"Unexpected data type $other")
@@ -88,29 +84,50 @@ object InferSchema {
   }
 
 
-  private def tryParseInteger(field: String): DataType = if ((allCatch opt field.toInt).isDefined) {
-    IntegerType
-  } else {
-    tryParseLong(field)
-  }
-
-  private def tryParseLong(field: String): DataType = if ((allCatch opt field.toLong).isDefined) {
-    LongType
-  } else {
-    tryParseDouble(field)
-  }
-
-  private def tryParseDouble(field: String): DataType = {
-    if ((allCatch opt field.toDouble).isDefined) {
-      DoubleType
+  private def tryParseInteger(field: String, sdf: SimpleDateFormat): DataType = {
+    if ((allCatch opt field.toInt).isDefined) {
+      IntegerType
     } else {
-      tryParseTimestamp(field)
+      tryParseLong(field, sdf)
     }
   }
 
-  def tryParseTimestamp(field: String): DataType = {
-    if ((allCatch opt Timestamp.valueOf(field)).isDefined) {
-      TimestampType
+  private def tryParseLong(field: String, sdf: SimpleDateFormat): DataType = {
+    if ((allCatch opt field.toLong).isDefined) {
+      LongType
+    } else {
+      tryParseDouble(field, sdf)
+    }
+  }
+
+  private def tryParseDouble(field: String, sdf: SimpleDateFormat): DataType = {
+    if ((allCatch opt field.toDouble).isDefined) {
+      DoubleType
+    } else {
+      tryParseTimestamp(field, sdf)
+    }
+  }
+
+
+  def tryParseTimestamp(field: String, sdf: SimpleDateFormat): DataType = {
+    if (sdf != null) {
+      if ((allCatch opt sdf.parse(field)).isDefined){
+        TimestampType
+      } else {
+        tryParseBoolean(field)
+      }
+    } else {
+      if ((allCatch opt Timestamp.valueOf(field)).isDefined) {
+        TimestampType
+      } else {
+        tryParseBoolean(field)
+      }
+    }
+  }
+
+  def tryParseBoolean(field: String): DataType = {
+    if ((allCatch opt field.toBoolean).isDefined) {
+      BooleanType
     } else {
       stringType()
     }
