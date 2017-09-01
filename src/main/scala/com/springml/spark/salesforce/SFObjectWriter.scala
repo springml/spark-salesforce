@@ -13,9 +13,10 @@ import com.springml.salesforce.wave.util.WaveAPIConstants
  * Next subsequent columns are fields to be updated
  */
 class SFObjectWriter (
-    val username: String,
+    val username: Option[String],
     val password: String,
-    val login: String,
+    val authToken: Option[String],
+    val serverUrl: String,
     val apiVersion: String,
     val sfObject: String,
     val mode: SaveMode,
@@ -63,7 +64,11 @@ class SFObjectWriter (
   }
 
   def bulkAPI() : BulkAPI = {
-    APIFactory.getInstance.bulkAPI(username, password, login, apiVersion)
+    if (username.isDefined) {
+      return APIFactory.getInstance.bulkAPI(username.get, password, serverUrl, apiVersion)
+    } else {
+      return APIFactory.getInstance.bulkAPIwAuthToken(authToken.get, serverUrl, apiVersion)
+    }
   }
 
   private def operation(mode: SaveMode): String = {

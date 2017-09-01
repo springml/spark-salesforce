@@ -37,12 +37,17 @@ import scala.util.Try
 object Utils extends Serializable {
   @transient val logger = Logger.getLogger("Utils")
 
-  def createConnection(username: String, password: String,
-      login: String, version: String):PartnerConnection = {
+  def createConnection(username: Option[String], password: String, authToken: Option[String],
+                       serverUrl: String, version: String):PartnerConnection = {
     val config = new ConnectorConfig()
-    config.setUsername(username)
-    config.setPassword(password)
-    val endpoint = if (login.endsWith("/")) (login + "services/Soap/u/" + version) else (login + "/services/Soap/u/" + version)
+    if (username.isDefined) {
+      config.setUsername(username.get)
+      config.setPassword(password)
+    } else {
+      config.setManualLogin(true)
+      config.setSessionId(authToken.get)
+    }
+    val endpoint = if (serverUrl.endsWith("/")) (serverUrl + "services/Soap/u/" + version) else (serverUrl + "/services/Soap/u/" + version)
     config.setAuthEndpoint(endpoint)
     config.setServiceEndpoint(endpoint)
     Connector.newConnection(config)
@@ -150,9 +155,9 @@ object Utils extends Serializable {
     }
   }
 
-  def monitorJob(objId: String, username: String, password:
-      String, login: String, version: String) : Boolean = {
-    var partnerConnection = Utils.createConnection(username, password, login, version)
+  def monitorJob(objId: String, username: Option[String], password:
+      String, authToken:Option[String], login: String, version: String) : Boolean = {
+    var partnerConnection = Utils.createConnection(username, password, authToken, login, version)
     try {
       monitorJob(partnerConnection, objId, 500)
     } catch {
@@ -161,7 +166,7 @@ object Utils extends Serializable {
         logger.info("Error Message from Salesforce Wave " + exMsg)
         if (exMsg contains "Invalid Session") {
           logger.info("Session expired. Monitoring Job using new connection")
-          return monitorJob(objId, username, password, login, version)
+          return monitorJob(objId, username, password, authToken, login, version)
         } else {
           throw uefault
         }
