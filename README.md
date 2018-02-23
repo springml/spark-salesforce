@@ -69,7 +69,7 @@ df.
    write.
    format("com.springml.spark.salesforce").
    option("username", "your_salesforce_username").
-   option("password", "your_salesforce_password_with_secutiry_token").
+   option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
    option("datasetName", "your_dataset_name").
    save()
 
@@ -79,7 +79,7 @@ val sfWaveDF = spark.
                 read.
                 format("com.springml.spark.salesforce").
                 option("username", "your_salesforce_username").
-                option("password", "your_salesforce_password_with_secutiry_token").
+                option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
                 option("saql", saql)
                 option("inferSchema", "true").
                 load()
@@ -90,7 +90,7 @@ val sfDF = spark.
                 read.
                 format("com.springml.spark.salesforce").
                 option("username", "your_salesforce_username").
-                option("password", "your_salesforce_password_with_secutiry_token").
+                option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
                 option("soql", soql).
                 option("version", "37.0").
                 load()
@@ -110,7 +110,7 @@ df.
    write.
    format("com.springml.spark.salesforce").
    option("username", "your_salesforce_username").
-   option("password", "your_salesforce_password_with_secutiry_token").
+   option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
    option("sfObject", "Contact").
    save()
 
@@ -128,7 +128,7 @@ DataFrame df = spark
 df.write()
       .format("com.springml.spark.salesforce")
 		  .option("username", "your_salesforce_username")
-		  .option("password", "your_salesforce_password_with_secutiry_token")
+		  .option("password", "your_salesforce_password_with_secutiry_token") //<salesforce login password><security token>
 		  .option("datasetName", "your_dataset_name")
 		  .save();
 
@@ -138,7 +138,7 @@ DataFrame sfWaveDF = spark.
           read().
           format("com.springml.spark.salesforce").
           option("username", "your_salesforce_username").
-          option("password", "your_salesforce_password_with_secutiry_token").
+          option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
           option("saql", saql)
           option("inferSchema", "true").
           load()
@@ -149,7 +149,7 @@ DataFrame sfDF = spark.
           read.
           format("com.springml.spark.salesforce").
           option("username", "your_salesforce_username").
-          option("password", "your_salesforce_password_with_secutiry_token").
+          option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
           option("soql", soql).
           option("version", "37.0").
           load()      
@@ -167,7 +167,7 @@ DataFrame df = spark
                     .load("your_csv_location");
 df.write().format("com.springml.spark.salesforce")
       .option("username", "your_salesforce_username")
-      .option("password", "your_salesforce_password_with_secutiry_token")
+      .option("password", "your_salesforce_password_with_secutiry_token")//<salesforce login password><security token>
       .option("sfObject", "Contact")
       .save();
 
@@ -178,15 +178,15 @@ df.write().format("com.springml.spark.salesforce")
 ```r
 # Writing Dataset
 df <- read.df("your_csv_location", source = "com.databricks.spark.csv", inferSchema = "true")
-write.df(df, path="", source='com.springml.spark.salesforce', mode="append", datasetName="your_dataset_name", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token")
+write.df(df, path="", source='com.springml.spark.salesforce', mode="append", datasetName="your_dataset_name", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token") #<salesforce login password><security token>
 
 # Reading Dataset
 saql <- "q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';"
-sfWaveDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, saql=saql)
+sfWaveDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, saql=saql) #<salesforce login password><security token>
 
 # Reading Salesforce Object
 soql <- "select id, name, amount from opportunity"
-dfDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, soql=soql)
+dfDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce_username, password=your_salesforce_password_with_secutiry_token, soql=soql) #<salesforce login password><security token>
 
 # Update Salesforce Object
 # CSV should contain Id column followed other fields to be Updated
@@ -195,7 +195,7 @@ dfDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce
 # 003B00000067Rnx,Superman
 # 003B00000067Rnw,SpiderMan
 df <- read.df("your_csv_location", source = "com.databricks.spark.csv", header = "true")
-write.df(df, path="", source='com.springml.spark.salesforce', mode="append", sfObject="Contacct", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token")
+write.df(df, path="", source='com.springml.spark.salesforce', mode="append", sfObject="Contacct", username="your_salesforce_username", password="your_salesforce_password_with_secutiry_token") #<salesforce login password><security token>
 
 ```
 
