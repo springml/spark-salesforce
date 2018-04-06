@@ -12,26 +12,10 @@ For Spark 1.x support, please check [spark1.x](https://github.com/springml/spark
 ## Linking
 You can link against this library in your program at the following ways:
 
-### Maven Dependency
-```
-<dependency>
-    <groupId>com.springml</groupId>
-    <artifactId>spark-salesforce_2.11</artifactId>
-    <version>1.1.0</version>
-</dependency>
-```
+## Importing library into Databricks
+1) run `sbt assembly` to build a single, executable JAR file. The JAR will exist under target/scala-2.XX/spark-salesforce-assembly-X.X.X.jar
+2) Upload JAR file into Databricks workspace.
 
-### SBT Dependency
-```
-libraryDependencies += "com.springml" % "spark-salesforce_2.11" % "1.1.0"
-```
-
-## Using with Spark shell
-This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
-
-```
-$ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
-```
 
 ## Features
 * **Dataset Creation** - Create dataset in [Salesforce Wave](http://www.salesforce.com/in/analytics-cloud/overview/) Wave from [Spark DataFrames](http://spark.apache.org/docs/latest/sql-programming-guide.html)
@@ -53,7 +37,8 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 * `dateFormat`: (Optional) A string that indicates the format that follow java.text.SimpleDateFormat to use when reading timestamps. This applies to TimestampType. By default, it is null which means trying to parse timestamp by java.sql.Timestamp.valueOf()
 * `resultVariable`: (Optional) result variable used in SAQL query. To paginate SAQL queries this package will add the required offset and limit. For example, in this SAQL query `q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';` **q** is the result variable
 * `pageSize`: (Optional) Page size for each query to be executed against Salesforce Wave. Default value is 2000. This option can only be used if `resultVariable` is set
-
+* `upsert`: (Optional) Indicator to either insert or update an existing record in one call. Default "false".
+* `externalIdFieldName`: (Optional) The name of the field used as the external ID for Salesforce Object. Default "Id"
 
 
 ### Scala API
@@ -95,7 +80,7 @@ val sfDF = spark.
                 option("version", "37.0").
                 load()
 
-// Update Salesforce Object
+// Upsert Salesforce Object
 // CSV should contain Id column followed other fields to be Updated
 // Sample - 
 // Id,Description
@@ -112,6 +97,7 @@ df.
    option("username", "your_salesforce_username").
    option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
    option("sfObject", "Contact").
+   option("upsert", "true").
    save()
 
 ```
@@ -300,4 +286,4 @@ df.
 Salesforce wave does require atleast one "Text" field. So please make sure the dataframe has atleast one string type.
 
 ## Building From Source
-This library is built with [SBT](http://www.scala-sbt.org/0.13/docs/Command-Line-Reference.html), which is automatically downloaded by the included shell script. To build a JAR file simply run `sbt/sbt package` from the project root. The build configuration includes support for both Scala 2.10 and 2.11.
+This library is built with [SBT](http://www.scala-sbt.org/0.13/docs/Command-Line-Reference.html), which is automatically downloaded by the included shell script. To build a JAR file simply run `sbt package` from the project root. The build configuration includes support for both Scala 2.10 and 2.11.

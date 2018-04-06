@@ -1,6 +1,6 @@
 name := "spark-salesforce"
 
-version := "1.1.1"
+version := "1.1.2"
 
 organization := "com.springml"
 
@@ -46,6 +46,8 @@ publishMavenStyle := true
 spIncludeMaven := true
 
 spShortDescription := "Spark Salesforce Wave Connector"
+
+retrieveManaged := true
 
 spDescription := """Spark Salesforce Wave Connector
                     | - Creates Salesforce Wave Datasets using dataframe
