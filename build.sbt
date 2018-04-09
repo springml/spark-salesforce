@@ -47,8 +47,6 @@ spIncludeMaven := true
 
 spShortDescription := "Spark Salesforce Wave Connector"
 
-retrieveManaged := true
-
 spDescription := """Spark Salesforce Wave Connector
                     | - Creates Salesforce Wave Datasets using dataframe
                     | - Constructs Salesforce Wave dataset's metadata using schema present in dataframe

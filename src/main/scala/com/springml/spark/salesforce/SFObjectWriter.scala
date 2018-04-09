@@ -30,7 +30,7 @@ class SFObjectWriter (
   def writeData(rdd: RDD[Row]): Boolean = {
     val csvRDD = rdd.map(row => row.toSeq.map(value => Utils.rowValue(value)).mkString(","))
 
-    val jobInfo = new JobInfo(WaveAPIConstants.STR_CSV, sfObject, operation(mode))
+    val jobInfo = new JobInfo(WaveAPIConstants.STR_CSV, sfObject, operation(mode, upsert))
     jobInfo.setExternalIdFieldName(externalIdFieldName)
 
     val jobId = bulkAPI.createJob(jobInfo).getId
@@ -73,9 +73,11 @@ class SFObjectWriter (
     APIFactory.getInstance.bulkAPI(username, password, login, apiVersion)
   }
 
-  private def operation(mode: SaveMode): String = {
-    if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
+  private def operation(mode: SaveMode, upsert: Boolean): String = {
+    if (upsert) {
       "upsert"
+    } else if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
+      WaveAPIConstants.STR_UPDATE
     } else if (mode != null && SaveMode.Append.name().equalsIgnoreCase(mode.name())) {
       WaveAPIConstants.STR_INSERT
     } else {
