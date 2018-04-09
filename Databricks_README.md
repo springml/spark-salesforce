@@ -12,26 +12,10 @@ For Spark 1.x support, please check [spark1.x](https://github.com/springml/spark
 ## Linking
 You can link against this library in your program at the following ways:
 
-### Maven Dependency
-```
-<dependency>
-    <groupId>com.springml</groupId>
-    <artifactId>spark-salesforce_2.11</artifactId>
-    <version>1.1.0</version>
-</dependency>
-```
+## Importing library into Databricks
+1) run `sbt assembly` to build a single, executable JAR file. The JAR will exist under target/scala-2.XX/spark-salesforce-assembly-X.X.X.jar
+2) Upload JAR file into Databricks workspace.
 
-### SBT Dependency
-```
-libraryDependencies += "com.springml" % "spark-salesforce_2.11" % "1.1.0"
-```
-
-## Using with Spark shell
-This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
-
-```
-$ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
-```
 
 ## Features
 * **Dataset Creation** - Create dataset in [Salesforce Wave](http://www.salesforce.com/in/analytics-cloud/overview/) Wave from [Spark DataFrames](http://spark.apache.org/docs/latest/sql-programming-guide.html)
@@ -40,7 +24,7 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 * **Update Salesforce Object** - Salesforce object will be updated with the details present in dataframe
 
 ### Options
-* `username`: Salesforce Wave Username. This user should have privilege to upload datasets or execute SAQL or execute SOQL  
+* `username`: Salesforce Wave Username. This user should have privilege to upload datasets or execute SAQL or execute SOQL
 * `password`: Salesforce Wave Password. Please append security token along with password.For example, if a user’s password is mypassword, and the security token is XXXXXXXXXX, the user must provide mypasswordXXXXXXXXXX
 * `login`: (Optional) Salesforce Login URL. Default value https://login.salesforce.com
 * `datasetName`: (Optional) Name of the dataset to be created in Salesforce Wave. Required for Dataset Creation
@@ -53,7 +37,7 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 * `dateFormat`: (Optional) A string that indicates the format that follow java.text.SimpleDateFormat to use when reading timestamps. This applies to TimestampType. By default, it is null which means trying to parse timestamp by java.sql.Timestamp.valueOf()
 * `resultVariable`: (Optional) result variable used in SAQL query. To paginate SAQL queries this package will add the required offset and limit. For example, in this SAQL query `q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';` **q** is the result variable
 * `pageSize`: (Optional) Page size for each query to be executed against Salesforce Wave. Default value is 2000. This option can only be used if `resultVariable` is set
-
+* `externalIdFieldName`: (Optional) The name of the field used as the external ID for Salesforce Object. This value is only used when doing an update or upsert. Default "Id"
 
 
 ### Scala API
@@ -95,9 +79,9 @@ val sfDF = spark.
                 option("version", "37.0").
                 load()
 
-// Update Salesforce Object
+// Upsert Salesforce Object
 // CSV should contain Id column followed other fields to be Updated
-// Sample - 
+// Sample -
 // Id,Description
 // 003B00000067Rnx,Superman
 // 003B00000067Rnw,SpiderMan
@@ -112,6 +96,7 @@ df.
    option("username", "your_salesforce_username").
    option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
    option("sfObject", "Contact").
+   option("upsert", "true").
    save()
 
 ```
@@ -152,11 +137,11 @@ DataFrame sfDF = spark.
           option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
           option("soql", soql).
           option("version", "37.0").
-          load()      
+          load()
 
 // Update Salesforce Object
 // CSV should contain Id column followed other fields to be Updated
-// Sample - 
+// Sample -
 // Id,Description
 // 003B00000067Rnx,Superman
 // 003B00000067Rnw,SpiderMan
@@ -190,7 +175,7 @@ dfDF <- read.df(source="com.springml.spark.salesforce", username=your_salesforce
 
 # Update Salesforce Object
 # CSV should contain Id column followed other fields to be Updated
-# Sample - 
+# Sample -
 # Id,Description
 # 003B00000067Rnx,Superman
 # 003B00000067Rnw,SpiderMan
@@ -217,11 +202,11 @@ Metadata configuration has to be provided in JSON format via "metadataConfig" op
 }
 ```
 
-* **df_data_type**: Dataframe datatype for which the Wave datatype to be mapped. 
+* **df_data_type**: Dataframe datatype for which the Wave datatype to be mapped.
 * **wave_data_type**: Salesforce wave supports Text, Numeric and Date types.
 * **precision**: The maximum number of digits in a numeric value, or the length of a text value
 * **scale**: The number of digits to the right of the decimal point in a numeric value. Must be less than the precision value
-* **format**: The format of the numeric or date value. 
+* **format**: The format of the numeric or date value.
 * **defaultValue**: The default value of the field, if any. If not provided for Numeric fields, 0 is used as defaultValue
 
 More details on Salesforce Wave Metadata can be found [here] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf)
@@ -241,10 +226,10 @@ More details on Salesforce Wave Metadata can be found [here] (https://resources.
 ```
 
 #### Sample to provide metadata config
-This sample is to change the format of the timestamp datatype. 
+This sample is to change the format of the timestamp datatype.
 
 ```scala
-// Default format is yyyy-MM-dd'T'HH:mm:ss.SSS'Z' and 
+// Default format is yyyy-MM-dd'T'HH:mm:ss.SSS'Z' and
 // the this sample changes to yyyy/MM/dd'T'HH:mm:ss
 val modifiedTimestampConfig = """{"timestamp":{"wave_type":"Date","format":"yyyy/MM/dd'T'HH:mm:ss"}}"""
 // Using spark-csv package to load dataframes
@@ -300,4 +285,4 @@ df.
 Salesforce wave does require atleast one "Text" field. So please make sure the dataframe has atleast one string type.
 
 ## Building From Source
-This library is built with [SBT](http://www.scala-sbt.org/0.13/docs/Command-Line-Reference.html), which is automatically downloaded by the included shell script. To build a JAR file simply run `sbt/sbt package` from the project root. The build configuration includes support for both Scala 2.10 and 2.11.
+This library is built with [SBT](http://www.scala-sbt.org/0.13/docs/Command-Line-Reference.html), which is automatically downloaded by the included shell script. To build a JAR file simply run `sbt package` from the project root. The build configuration includes support for both Scala 2.10 and 2.11.

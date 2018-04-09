@@ -99,12 +99,9 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "36.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
-    val upsert = parameters.getOrElse("upsert", "false")
     val metadataFile = parameters.get("metadataFile")
     val encodeFields = parameters.get("encodeFields")
     val monitorJob = parameters.getOrElse("monitorJob", "false")
-
-    // Options for job
     val externalIdFieldName = parameters.getOrElse("externalIdFieldName", "Id")
 
     validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
@@ -123,8 +120,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           flag(upsert, "upsert"), flag(monitorJob, "monitorJob"), data, metadataFile)
     } else {
       logger.info("Updating Salesforce Object")
-      updateSalesforceObject(username, password, login, version, sfObject.get, mode,
-          flag(upsert, "upsert"), externalIdFieldName, data)
+      updateSalesforceObject(username, password, login, version, sfObject.get, mode, externalIdFieldName, data)
     }
 
     return createReturnRelation(data)
@@ -137,7 +133,6 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       version: String,
       sfObject: String,
       mode: SaveMode,
-      upsert: Boolean,
       externalIdFieldName: String,
       data: DataFrame) {
 
@@ -148,7 +143,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
     val bulkAPI = APIFactory.getInstance.bulkAPI(username, password, login, version)
-    val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, upsert, externalIdFieldName, csvHeader)
+    val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, externalIdFieldName, csvHeader)
     logger.info("Writing data")
     val successfulWrite = writer.writeData(repartitionedRDD)
     logger.info(s"Writing data was successful was $successfulWrite")
