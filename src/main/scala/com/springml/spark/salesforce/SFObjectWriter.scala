@@ -21,6 +21,7 @@ class SFObjectWriter (
     val apiVersion: String,
     val sfObject: String,
     val mode: SaveMode,
+    val upsert: Boolean,
     val externalIdFieldName: String,
     val csvHeader: String
     ) extends Serializable {
