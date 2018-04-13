@@ -28,9 +28,10 @@ import org.apache.spark.sql.SaveMode
  * It uses Partner External Metadata SOAP API to write the dataset
  */
 class DataWriter (
-    val userName: String,
+    val userName: Option[String],
     val password: String,
-    val login: String,
+    val authToken: Option[String],
+    val serverUrl: String,
     val version: String,
     val datasetName: String,
     val appName: String
@@ -40,7 +41,7 @@ class DataWriter (
   def writeMetadata(metaDataJson: String,
       mode: SaveMode,
       upsert: Boolean): Option[String] = {
-    val partnerConnection = createConnection(userName, password, login, version)
+    val partnerConnection = createConnection(userName, password, authToken, serverUrl, version)
     val oper = operation(mode, upsert)
 
     val sobj = new SObject()
@@ -87,7 +88,7 @@ class DataWriter (
         sobj.setField("InsightsExternalDataId", metadataId)
         sobj.setField("PartNumber", partNumber)
 
-        val partnerConnection = Utils.createConnection(userName, password, login, version)
+        val partnerConnection = Utils.createConnection(userName, password, authToken, serverUrl, version)
         val results = partnerConnection.create(Array(sobj))
 
         val resultSuccess = results.map(saveResult => {
@@ -108,7 +109,7 @@ class DataWriter (
 
   def commit(id: String): Boolean = {
 
-    val partnerConnection = Utils.createConnection(userName, password, login, version)
+    val partnerConnection = Utils.createConnection(userName, password, authToken, serverUrl, version)
 
     val sobj = new SObject()
     sobj.setType("InsightsExternalData")
