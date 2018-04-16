@@ -63,7 +63,7 @@ case class BulkRelation(
         })
       ).toDS()
 
-      sqlContext.sparkSession.read.option("header", true).option("inferSchema",true).csv(csvData)
+      sqlContext.sparkSession.read.option("header", true).option("inferSchema", inferSchema).csv(csvData)
     } else {
       throw new Exception("Job completion timeout")
     }

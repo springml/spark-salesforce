@@ -131,13 +131,13 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           sqlContext,
           inferSchemaFlag
         )
-      }
-
-      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
+      } else {
+        val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
-      DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
+        DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
           null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag,
           replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
+      }
     }
 
   }
