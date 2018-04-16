@@ -37,7 +37,7 @@ spName := "springml/spark-salesforce"
 
 spAppendScalaVersion := true
 
-sparkVersion := "2.1.0"
+sparkVersion := "2.2.0"
 
 sparkComponents += "sql"
 
