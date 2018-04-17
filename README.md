@@ -44,7 +44,7 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 * `password`: Salesforce Wave Password. Please append security token along with password.For example, if a user’s password is mypassword, and the security token is XXXXXXXXXX, the user must provide mypasswordXXXXXXXXXX
 * `login`: (Optional) Salesforce Login URL. Default value https://login.salesforce.com
 * `datasetName`: (Optional) Name of the dataset to be created in Salesforce Wave. Required for Dataset Creation
-* `sfObject`: (Optional) Salesforce Object to be updated. (e.g.) Contact
+* `sfObject`: (Optional) Salesforce Object to be updated. (e.g.) Contact. Mandatory if `bulk` is `true`.
 * `metadataConfig`: (Optional) Metadata configuration which will be used to construct [Salesforce Wave Dataset Metadata] (https://resources.docs.salesforce.com/sfdc/pdf/bi_dev_guide_ext_data_format.pdf). Metadata configuration has to be provided in JSON format
 * `saql`: (Optional) SAQL query to used to query Salesforce Wave. Mandatory for reading Salesforce Wave dataset
 * `soql`: (Optional) SOQL query to used to query Salesforce Object. Mandatory for reading Salesforce Object like Opportunity
@@ -54,7 +54,11 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 * `resultVariable`: (Optional) result variable used in SAQL query. To paginate SAQL queries this package will add the required offset and limit. For example, in this SAQL query `q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';` **q** is the result variable
 * `pageSize`: (Optional) Page size for each query to be executed against Salesforce Wave. Default value is 2000. This option can only be used if `resultVariable` is set
 
-
+### Options only supported for fetching Salesforce Objects.
+* `bulk`: (Optional) Flag to enable bulk query. This is the preferred method when loading large sets of data. Salesforce will process batches in the background. Default value is `false`.
+* `contentType`: (Optional) Indicates the media type of the resource. Default CSV. This option is currently can only be used if `bulk` is `true`.
+* `pkChunking`: (Optional) Flag to enable automatic primary key chunking for bulk query job. This splits bulk queries into separate batches that of the size defined by `chunkSize` option. By default `false` and the default chunk size is 100,000.
+* `chunkSize`: (Optional) The size of the number of records to include in each batch. Default value is 100,000. This option can only be used when `pkChunking` is `true`. Maximum size is 250,000.
 
 ### Scala API
 ```scala
