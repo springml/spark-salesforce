@@ -4,15 +4,15 @@ import org.mockito.Mockito.{when, _}
 import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
-import com.springml.salesforce.wave.api.{BulkAPI}
+import com.springml.salesforce.wave.api.BulkAPI
 import org.apache.spark.{SparkConf, SparkContext}
 import com.springml.salesforce.wave.model.{BatchInfo, JobInfo}
 import com.springml.salesforce.wave.util.WaveAPIConstants
-import com.springml.spark.salesforce.SFObjectWriter
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.mockito.ArgumentCaptor
+import org.mockito.mock.SerializableMode
 
 class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterEach {
   val contact = "Contact";
@@ -32,7 +32,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
   var sc: SparkContext = _
 
   override def beforeEach() {
-    bulkAPI = mock[BulkAPI](withSettings().serializable())
+    bulkAPI = mock[BulkAPI](withSettings().serializable(SerializableMode.ACROSS_CLASSLOADERS))
 
     val jobInfo = new JobInfo
     jobInfo.setId(jobId)
@@ -71,10 +71,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
   }
 
   private def testBulkAPIJobCreation(writer: SFObjectWriter, rdd: RDD[Row]): JobInfo = {
-    val spyWriter = mock[SFObjectWriter](withSettings().spiedInstance(writer).serializable().defaultAnswer(CALLS_REAL_METHODS))
-    when(spyWriter.bulkAPI()).thenReturn(bulkAPI)
-
-    val result = spyWriter.writeData(rdd)
+    val result = writer.writeData(rdd)
 
     val createJobInfoCaptor = ArgumentCaptor.forClass(classOf[JobInfo])
     verify(bulkAPI).createJob(createJobInfoCaptor.capture())
@@ -92,10 +89,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val df = sampleDF()
     val csvHeader = Utils.csvHeadder(df.schema)
     val writer = new SFObjectWriter(
-      username,
-      password,
-      login,
-      apiVersion,
+      bulkAPI,
       contact,
       SaveMode.Append,
       false,
@@ -111,10 +105,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val df = sampleDF()
     val csvHeader = Utils.csvHeadder(df.schema)
     val writer = new SFObjectWriter(
-      username,
-      password,
-      login,
-      apiVersion,
+      bulkAPI,
       contact,
       SaveMode.Overwrite,
       false,
@@ -130,10 +121,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val df = sampleDF()
     val csvHeader = Utils.csvHeadder(df.schema)
     val writer = new SFObjectWriter(
-      username,
-      password,
-      login,
-      apiVersion,
+      bulkAPI,
       contact,
       SaveMode.ErrorIfExists,
       false,
@@ -149,10 +137,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val df = sampleDF()
     val csvHeader = Utils.csvHeadder(df.schema)
     val writer = new SFObjectWriter(
-      username,
-      password,
-      login,
-      apiVersion,
+      bulkAPI,
       contact,
       SaveMode.Ignore,
       false,
@@ -168,10 +153,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val df = sampleDF()
     val csvHeader = Utils.csvHeadder(df.schema)
     val writer = new SFObjectWriter(
-      username,
-      password,
-      login,
-      apiVersion,
+      bulkAPI,
       contact,
       SaveMode.Append,
       true,
@@ -187,10 +169,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val df = sampleDF()
     val csvHeader = Utils.csvHeadder(df.schema)
     val writer = new SFObjectWriter(
-      username,
-      password,
-      login,
-      apiVersion,
+      bulkAPI,
       contact,
       SaveMode.Overwrite,
       true,
