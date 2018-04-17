@@ -12,6 +12,7 @@ import org.apache.http.Header
 import org.apache.spark.rdd.RDD
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 
 /**
   * Relation class for reading data from Salesforce and construct RDD
@@ -23,7 +24,8 @@ case class BulkRelation(
     customHeaders: List[Header],
     userSchema: StructType,
     sqlContext: SQLContext,
-    inferSchema: Boolean) extends BaseRelation with TableScan {
+    inferSchema: Boolean,
+    timeout: Long) extends BaseRelation with TableScan {
 
   import sqlContext.sparkSession.implicits._
 
@@ -69,19 +71,15 @@ case class BulkRelation(
   }
 
   private def awaitJobCompleted(jobId: String): Boolean = {
-    var i = 1
-    // Maximum wait time is 10 mins for a job
-    while (i < 3000) {
-      if (bulkAPI.isCompleted(jobId)) {
-        logger.info("Job completed")
-        return true
-      }
+    val timeoutDuration = FiniteDuration(timeout, MILLISECONDS)
+    val initSleepIntervalDuration = FiniteDuration(200L, MILLISECONDS)
+    val maxSleepIntervalDuration = FiniteDuration(10000L, MILLISECONDS)
+    var completed = false
+    Utils.retryWithExponentialBackoff(() => {
+      completed = bulkAPI.isCompleted(jobId)
+      completed
+    }, timeoutDuration, initSleepIntervalDuration, maxSleepIntervalDuration)
 
-      logger.info("Job not completed, waiting...")
-      Thread.sleep(200)
-      i = i + 1
-    }
-
-    return false
+    return completed
   }
 }

@@ -19,6 +19,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
+
 class TestUtils extends FunSuite with BeforeAndAfterEach {
   var ss: SparkSession = _
 
@@ -114,6 +116,22 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
     val expected = "c1,c2,c3,c4,c5"
     val actual = Utils.csvHeadder(schema)
     assert(expected.equals(actual))
+  }
+
+  test("retry with expoential backoff") {
+    val timeoutDuration = FiniteDuration(5000L, MILLISECONDS)
+    val initSleepIntervalDuration = FiniteDuration(100L, MILLISECONDS)
+    val maxSleepIntervalDuration = FiniteDuration(500L, MILLISECONDS)
+    var completed = false
+    var attempts = 0
+    var expectedNumberAttempts = 2
+    Utils.retryWithExponentialBackoff(() => {
+      attempts += 1
+      completed = attempts == expectedNumberAttempts
+      completed
+    }, timeoutDuration, initSleepIntervalDuration, maxSleepIntervalDuration)
+
+    assert(attempts == expectedNumberAttempts)
   }
 
 }

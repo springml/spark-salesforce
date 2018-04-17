@@ -92,42 +92,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       }
 
       if (bulkFlag) {
-        val bulkApi = APIFactory.getInstance.bulkAPI(username, password, login, version)
-
-        val sfObject = parameters.get("sfObject")
-        if (sfObject.isEmpty) {
-          throw new Exception("sfObject must not be empty when performing bulk query")
-        }
-
-        var customHeaders = ListBuffer[Header]()
-        val pkChunkingStr = parameters.getOrElse("pkChunking", "false")
-        val pkChunking = flag(pkChunkingStr, "pkChunkingStr")
-
-        if (pkChunking) {
-          val chunkSize = parameters.get("chunkSize")
-
-          if (!chunkSize.isEmpty) {
-            try {
-              chunkSize.get.toInt
-            }
-            catch {
-              case e: Exception => throw new Exception("chunkSize must be a valid integer")
-            }
-            customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=$chunkSize")
-          } else {
-            customHeaders += new BasicHeader("Sforce-Enable-PKChunking", "true")
-          }
-        }
-
-        BulkRelation(
-          soql.get,
-          sfObject.get,
-          bulkApi,
-          customHeaders.toList,
-          schema,
-          sqlContext,
-          inferSchemaFlag
-        )
+        createBulkRelation(sqlContext, username, password, login, version, inferSchemaFlag, parameters, schema)
       } else {
         val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
@@ -200,6 +165,63 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       sys.error("Unable to update salesforce object")
     }
 
+  }
+
+  private def createBulkRelation(
+      sqlContext: SQLContext,
+      username: String,
+      password: String,
+      login: String,
+      version: String,
+      inferSchemaFlag: Boolean,
+      parameters: Map[String, String],
+      schema: StructType): BulkRelation = {
+    val soql = parameters.get("soql")
+
+    val bulkApi = APIFactory.getInstance.bulkAPI(username, password, login, version)
+
+    val sfObject = parameters.get("sfObject")
+    if (sfObject.isEmpty) {
+      throw new Exception("sfObject must not be empty when performing bulk query")
+    }
+
+    val timeoutStr = parameters.getOrElse("timeout", "600000")
+    val timeout = try {
+      timeoutStr.toLong
+    } catch {
+      case e: Exception => throw new Exception("timeout must be a valid integer")
+    }
+
+    var customHeaders = ListBuffer[Header]()
+    val pkChunkingStr = parameters.getOrElse("pkChunking", "false")
+    val pkChunking = flag(pkChunkingStr, "pkChunkingStr")
+
+    if (pkChunking) {
+      val chunkSize = parameters.get("chunkSize")
+
+      if (!chunkSize.isEmpty) {
+        try {
+          chunkSize.get.toInt
+        }
+        catch {
+          case e: Exception => throw new Exception("chunkSize must be a valid integer")
+        }
+        customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=$chunkSize")
+      } else {
+        customHeaders += new BasicHeader("Sforce-Enable-PKChunking", "true")
+      }
+    }
+
+    BulkRelation(
+      soql.get,
+      sfObject.get,
+      bulkApi,
+      customHeaders.toList,
+      schema,
+      sqlContext,
+      inferSchemaFlag,
+      timeout
+    )
   }
 
   private def writeInSalesforceWave(

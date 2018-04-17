@@ -95,7 +95,8 @@ class TestBulkRelation extends FunSuite with MockitoSugar with BeforeAndAfterEac
       customHeaders,
       null,
       sqlContext,
-      true
+      true,
+      10000
     )
 
     val records = bulkRelation.buildScan().collect()
@@ -114,10 +115,9 @@ class TestBulkRelation extends FunSuite with MockitoSugar with BeforeAndAfterEac
       customHeaders,
       null,
       sqlContext,
-      true
+      true,
+      10000
     )
-
-    bulkRelation.records.cache()
 
     val inferedSchema = bulkRelation.schema
     val idField = inferedSchema.apply("Id")

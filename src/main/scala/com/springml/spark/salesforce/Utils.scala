@@ -18,17 +18,21 @@ package com.springml.spark.salesforce
 
 import scala.io.Source
 import scala.util.parsing.json._
-import com.sforce.soap.partner.{SaveResult, Connector, PartnerConnection}
+import com.sforce.soap.partner.{Connector, PartnerConnection, SaveResult}
 import com.sforce.ws.ConnectorConfig
 import com.madhukaraphatak.sizeof.SizeEstimator
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
+
 import scala.collection.immutable.HashMap
 import com.springml.spark.salesforce.metadata.MetadataConstructor
 import com.sforce.soap.partner.sobject.SObject
+import scala.concurrent.duration._
 import com.sforce.soap.partner.fault.UnexpectedErrorFault
+
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
@@ -173,6 +177,34 @@ object Utils extends Serializable {
     } finally {
       Try(partnerConnection.logout())
     }
+  }
+
+  def retryWithExponentialBackoff(
+      func:() => Boolean,
+      timeoutDuration: FiniteDuration,
+      initSleepInterval: FiniteDuration,
+      maxSleepInterval: FiniteDuration): Boolean = {
+
+    val timeout = timeoutDuration.toMillis
+    var waited = 0L
+    var sleepInterval = initSleepInterval.toMillis
+    var done = false
+
+    do {
+      done = func()
+      if (!done) {
+        sleepInterval = math.min(sleepInterval * 2, maxSleepInterval.toMillis)
+
+        var sleepTime = math.min(sleepInterval, timeout - waited)
+        if (sleepTime < 1L) {
+          sleepTime = 1
+        }
+        Thread.sleep(sleepTime)
+        waited += sleepTime
+      }
+    } while (!done && waited < timeout)
+
+    done
   }
 
   private def monitorJob(connection: PartnerConnection,
