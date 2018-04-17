@@ -45,7 +45,6 @@ class TestBulkRelation extends FunSuite with MockitoSugar with BeforeAndAfterEac
 
   val sfObject = "TestObject"
   val soql = "SELECT Id, Name FROM TestObject"
-  val contentType = "CSV"
   val customHeaders = List(new BasicHeader("Sforce-Enable-PKChunking", "true"))
 
 
@@ -93,7 +92,6 @@ class TestBulkRelation extends FunSuite with MockitoSugar with BeforeAndAfterEac
       soql,
       sfObject,
       bulkAPI,
-      contentType,
       customHeaders,
       null,
       sqlContext,
@@ -113,7 +111,6 @@ class TestBulkRelation extends FunSuite with MockitoSugar with BeforeAndAfterEac
       soql,
       sfObject,
       bulkAPI,
-      contentType,
       customHeaders,
       null,
       sqlContext,

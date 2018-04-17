@@ -99,8 +99,6 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           throw new Exception("sfObject must not be empty when performing bulk query")
         }
 
-        val contentType = parameters.getOrElse("contentType", "CSV")
-
         var customHeaders = ListBuffer[Header]()
         val pkChunkingStr = parameters.getOrElse("pkChunking", "false")
         val pkChunking = flag(pkChunkingStr, "pkChunkingStr")
@@ -125,7 +123,6 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           soql.get,
           sfObject.get,
           bulkApi,
-          contentType,
           customHeaders.toList,
           schema,
           sqlContext,

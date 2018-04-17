@@ -56,7 +56,6 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 
 ### Options only supported for fetching Salesforce Objects.
 * `bulk`: (Optional) Flag to enable bulk query. This is the preferred method when loading large sets of data. Salesforce will process batches in the background. Default value is `false`.
-* `contentType`: (Optional) Indicates the media type of the resource. Default CSV. This option is currently can only be used if `bulk` is `true`.
 * `pkChunking`: (Optional) Flag to enable automatic primary key chunking for bulk query job. This splits bulk queries into separate batches that of the size defined by `chunkSize` option. By default `false` and the default chunk size is 100,000.
 * `chunkSize`: (Optional) The size of the number of records to include in each batch. Default value is 100,000. This option can only be used when `pkChunking` is `true`. Maximum size is 250,000.
 
