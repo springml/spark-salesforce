@@ -4,10 +4,11 @@ import org.mockito.Mockito.{when, _}
 import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
-import com.springml.salesforce.wave.api.{APIFactory, BulkAPI}
+import com.springml.salesforce.wave.api.{BulkAPI}
 import org.apache.spark.{SparkConf, SparkContext}
 import com.springml.salesforce.wave.model.{BatchInfo, JobInfo}
 import com.springml.salesforce.wave.util.WaveAPIConstants
+import com.springml.spark.salesforce.SFObjectWriter
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
@@ -30,8 +31,6 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
   var sparkConf: SparkConf = _
   var sc: SparkContext = _
 
-  override def mock[T <: AnyRef](implicit manifest: Manifest[T]): T = super.mock[T](withSettings().serializable())
-
   override def beforeEach() {
     bulkAPI = mock[BulkAPI](withSettings().serializable())
 
@@ -49,6 +48,10 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
 
     sparkConf = new SparkConf().setMaster("local").setAppName("Test SF Object Update")
     sc = new SparkContext(sparkConf)
+  }
+
+  override def afterEach(): Unit = {
+    sc.stop()
   }
 
   private def sampleDF() : DataFrame = {
@@ -75,13 +78,12 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
 
     val createJobInfoCaptor = ArgumentCaptor.forClass(classOf[JobInfo])
     verify(bulkAPI).createJob(createJobInfoCaptor.capture())
-    val jobInfoCaptorValue = createJobInfoCaptor.getValue().asInstanceOf[JobInfo]
+    val jobInfoCaptorValue = createJobInfoCaptor.getValue()
 
     assert(jobInfoCaptorValue.getExternalIdFieldName.equals(externalId))
     assert(jobInfoCaptorValue.getContentType.equals(WaveAPIConstants.STR_CSV))
     assert(jobInfoCaptorValue.getObject.equals(contact))
     assert(result)
-
 
     jobInfoCaptorValue
   }
@@ -103,10 +105,6 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val jobInfoCaptorValue = testBulkAPIJobCreation(writer, df.rdd)
 
     assert(jobInfoCaptorValue.getOperation.equals("insert"))
-
-    sc.stop()
-
-
   }
 
   test ("Write to Salesforce with Overwrite mode") {
@@ -126,8 +124,6 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val jobInfoCaptorValue = testBulkAPIJobCreation(writer, df.rdd)
 
     assert(jobInfoCaptorValue.getOperation.equals("update"))
-
-    sc.stop()
   }
 
   test ("Write to Salesforce with ErrorIfExists mode") {
@@ -147,8 +143,6 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val jobInfoCaptorValue = testBulkAPIJobCreation(writer, df.rdd)
 
     assert(jobInfoCaptorValue.getOperation.equals("insert"))
-
-    sc.stop()
   }
 
   test ("Write to Salesforce with Ignore mode") {
@@ -168,8 +162,6 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val jobInfoCaptorValue = testBulkAPIJobCreation(writer, df.rdd)
 
     assert(jobInfoCaptorValue.getOperation.equals("insert"))
-
-    sc.stop()
   }
 
   test ("Write to Salesforce with upsert flag and Append mode") {
@@ -189,8 +181,6 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val jobInfoCaptorValue = testBulkAPIJobCreation(writer, df.rdd)
 
     assert(jobInfoCaptorValue.getOperation.equals("upsert"))
-
-    sc.stop()
   }
 
   test ("Write to Salesforce with upsert flag and Overwrite mode") {
@@ -210,7 +200,5 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     val jobInfoCaptorValue = testBulkAPIJobCreation(writer, df.rdd)
 
     assert(jobInfoCaptorValue.getOperation.equals("upsert"))
-
-    sc.stop()
   }
 }
