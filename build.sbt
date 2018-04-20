@@ -11,7 +11,7 @@ resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositor
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "40.0.0",
   "com.force.api" % "force-partner-api" % "40.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.8",
+  "com.springml" % "salesforce-wave-api" % "1.0.9",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
@@ -37,7 +37,7 @@ spName := "springml/spark-salesforce"
 
 spAppendScalaVersion := true
 
-sparkVersion := "2.1.0"
+sparkVersion := "2.2.0"
 
 sparkComponents += "sql"
 
