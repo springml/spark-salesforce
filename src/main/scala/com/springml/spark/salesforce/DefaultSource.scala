@@ -103,6 +103,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val metadataFile = parameters.get("metadataFile")
     val encodeFields = parameters.get("encodeFields")
     val monitorJob = parameters.getOrElse("monitorJob", "false")
+    val externalIdFieldName = parameters.getOrElse("externalIdFieldName", "Id")
 
     validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
 
@@ -120,7 +121,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           flag(upsert, "upsert"), flag(monitorJob, "monitorJob"), data, metadataFile)
     } else {
       logger.info("Updating Salesforce Object")
-      updateSalesforceObject(username, password, login, version, sfObject.get, mode, data)
+      updateSalesforceObject(username, password, login, version, sfObject.get, mode,
+          flag(upsert, "upsert"), externalIdFieldName, data)
     }
 
     return createReturnRelation(data)
@@ -133,6 +135,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       version: String,
       sfObject: String,
       mode: SaveMode,
+      upsert: Boolean,
+      externalIdFieldName: String,
       data: DataFrame) {
 
     val csvHeader = Utils.csvHeadder(data.schema)
@@ -142,7 +146,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
     val bulkAPI = APIFactory.getInstance.bulkAPI(username, password, login, version)
-    val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, csvHeader)
+    val writer = new SFObjectWriter(bulkAPI, sfObject, mode, upsert, externalIdFieldName, csvHeader)
     logger.info("Writing data")
     val successfulWrite = writer.writeData(repartitionedRDD)
     logger.info(s"Writing data was successful was $successfulWrite")

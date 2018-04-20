@@ -53,7 +53,8 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
 * `dateFormat`: (Optional) A string that indicates the format that follow java.text.SimpleDateFormat to use when reading timestamps. This applies to TimestampType. By default, it is null which means trying to parse timestamp by java.sql.Timestamp.valueOf()
 * `resultVariable`: (Optional) result variable used in SAQL query. To paginate SAQL queries this package will add the required offset and limit. For example, in this SAQL query `q = load \"<dataset_id>/<dataset_version_id>\"; q = foreach q generate  'Name' as 'Name',  'Email' as 'Email';` **q** is the result variable
 * `pageSize`: (Optional) Page size for each query to be executed against Salesforce Wave. Default value is 2000. This option can only be used if `resultVariable` is set
-
+* `upsert`: (Optional) Flag to upsert data to Salesforce. This performs an insert or update operation using the "externalIdFieldName" as the primary ID. Existing fields that are not in the dataframe being pushed will not be updated. Default "false".
+* `externalIdFieldName`: (Optional) The name of the field used as the external ID for Salesforce Object. This value is only used when doing an update or upsert. Default "Id"
 
 
 ### Scala API

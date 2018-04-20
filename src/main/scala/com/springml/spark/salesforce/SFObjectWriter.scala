@@ -6,6 +6,8 @@ import org.apache.spark.sql.{Row, SaveMode}
 import com.springml.salesforce.wave.api.APIFactory
 import com.springml.salesforce.wave.api.BulkAPI
 import com.springml.salesforce.wave.util.WaveAPIConstants
+import com.springml.salesforce.wave.model.JobInfo
+
 
 /**
  * Write class responsible for update Salesforce object using data provided in dataframe
@@ -13,12 +15,11 @@ import com.springml.salesforce.wave.util.WaveAPIConstants
  * Next subsequent columns are fields to be updated
  */
 class SFObjectWriter (
-    val username: String,
-    val password: String,
-    val login: String,
-    val apiVersion: String,
+    val bulkAPI: BulkAPI,
     val sfObject: String,
     val mode: SaveMode,
+    val upsert: Boolean,
+    val externalIdFieldName: String,
     val csvHeader: String
     ) extends Serializable {
 
@@ -26,7 +27,11 @@ class SFObjectWriter (
 
   def writeData(rdd: RDD[Row]): Boolean = {
     val csvRDD = rdd.map(row => row.toSeq.map(value => Utils.rowValue(value)).mkString(","))
-    val jobId = bulkAPI.createJob(sfObject, operation(mode), WaveAPIConstants.STR_CSV).getId
+
+    val jobInfo = new JobInfo(WaveAPIConstants.STR_CSV, sfObject, operation(mode, upsert))
+    jobInfo.setExternalIdFieldName(externalIdFieldName)
+
+    val jobId = bulkAPI.createJob(jobInfo).getId
 
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
@@ -62,12 +67,10 @@ class SFObjectWriter (
     false
   }
 
-  def bulkAPI() : BulkAPI = {
-    APIFactory.getInstance.bulkAPI(username, password, login, apiVersion)
-  }
-
-  private def operation(mode: SaveMode): String = {
-    if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
+  private def operation(mode: SaveMode, upsert: Boolean): String = {
+    if (upsert) {
+      "upsert"
+    } else if (mode != null && SaveMode.Overwrite.name().equalsIgnoreCase(mode.name())) {
       WaveAPIConstants.STR_UPDATE
     } else if (mode != null && SaveMode.Append.name().equalsIgnoreCase(mode.name())) {
       WaveAPIConstants.STR_INSERT
