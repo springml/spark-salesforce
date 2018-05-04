@@ -35,7 +35,6 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
 
     when(bulkAPI.closeJob(jobId)).thenReturn(jobInfo)
     when(bulkAPI.isCompleted(jobId)).thenReturn(true)
-    when(writer.bulkAPI()).thenReturn(bulkAPI)
 
     sparkConf = new SparkConf().setMaster("local").setAppName("Test SF Object Update")
     sc = new SparkContext(sparkConf)
