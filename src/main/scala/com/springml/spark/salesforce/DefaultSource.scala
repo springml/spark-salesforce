@@ -210,7 +210,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
         catch {
           case e: Exception => throw new Exception("chunkSize must be a valid integer")
         }
-        customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=$chunkSize")
+        customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=${chunkSize.get}")
       } else {
         customHeaders += new BasicHeader("Sforce-Enable-PKChunking", "true")
       }
