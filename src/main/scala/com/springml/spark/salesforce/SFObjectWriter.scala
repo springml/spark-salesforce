@@ -70,6 +70,7 @@ class SFObjectWriter (
     false
   }
 
+  // Create new instance of BulkAPI every time because Spark workers cannot serialize the object
   private def bulkAPI(): BulkAPI = {
     APIFactory.getInstance().bulkAPI(username, password, login, version)
   }
