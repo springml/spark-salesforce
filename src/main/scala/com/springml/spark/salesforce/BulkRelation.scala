@@ -2,7 +2,7 @@ package com.springml.spark.salesforce
 
 import java.text.SimpleDateFormat
 
-import com.springml.salesforce.wave.api.BulkAPI
+import com.springml.salesforce.wave.api.{APIFactory, BulkAPI}
 import org.apache.log4j.Logger
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SQLContext}
 import org.apache.spark.sql.sources.{BaseRelation, TableScan}
@@ -18,9 +18,12 @@ import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
   * Relation class for reading data from Salesforce and construct RDD
   */
 case class BulkRelation(
+    username: String,
+    password: String,
+    login: String,
+    version: String,
     query: String,
     sfObject: String,
-    bulkAPI: BulkAPI,
     customHeaders: List[Header],
     userSchema: StructType,
     sqlContext: SQLContext,
@@ -28,8 +31,6 @@ case class BulkRelation(
     timeout: Long) extends BaseRelation with TableScan {
 
   import sqlContext.sparkSession.implicits._
-
-  private val logger = Logger.getLogger(classOf[BulkRelation])
 
   def buildScan() = records.rdd
 
@@ -53,21 +54,29 @@ case class BulkRelation(
       val batchInfoList = bulkAPI.getBatchInfoList(jobId)
       val batchInfos = batchInfoList.getBatchInfo().asScala.toList
       val completedBatchInfos = batchInfos.filter(batchInfo => batchInfo.getState().equals("Completed"))
+      val completedBatchInfoIds = completedBatchInfos.map(batchInfo => batchInfo.getId)
 
-      val csvData = sqlContext.sparkContext.parallelize(
-        completedBatchInfos.flatMap(batchInfo => {
-          val resultIds = bulkAPI.getBatchResultIds(jobId, batchInfo.getId)
+      val fetchBatchInfo = (batchInfoId: String) => {
+        val resultIds = bulkAPI.getBatchResultIds(jobId, batchInfoId)
 
-          val result = bulkAPI.getBatchResult(jobId, batchInfo.getId, resultIds.get(resultIds.size() - 1))
+        val result = bulkAPI.getBatchResult(jobId, batchInfoId, resultIds.get(resultIds.size() - 1))
 
-          result.lines.toList
-        })
-      ).toDS()
+        result.lines.toList
+      }
+
+      val csvData = sqlContext
+        .sparkContext
+        .parallelize(completedBatchInfoIds)
+        .flatMap(fetchBatchInfo).toDS()
 
       sqlContext.sparkSession.read.option("header", true).option("inferSchema", inferSchema).csv(csvData)
     } else {
       throw new Exception("Job completion timeout")
     }
+  }
+
+  private def bulkAPI(): BulkAPI = {
+    APIFactory.getInstance().bulkAPI(username, password, login, version)
   }
 
   private def awaitJobCompleted(jobId: String): Boolean = {

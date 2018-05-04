@@ -15,7 +15,10 @@ import com.springml.salesforce.wave.model.JobInfo
  * Next subsequent columns are fields to be updated
  */
 class SFObjectWriter (
-    val bulkAPI: BulkAPI,
+    val username: String,
+    val password: String,
+    val login: String,
+    val version: String,
     val sfObject: String,
     val mode: SaveMode,
     val upsert: Boolean,
@@ -65,6 +68,10 @@ class SFObjectWriter (
     print("Returning false...")
     logger.info("Job not completed. Timeout..." )
     false
+  }
+
+  private def bulkAPI(): BulkAPI = {
+    APIFactory.getInstance().bulkAPI(username, password, login, version)
   }
 
   private def operation(mode: SaveMode, upsert: Boolean): String = {
