@@ -51,6 +51,8 @@ case class BulkRelation(
     val batchInfo = bulkAPI.addBatch(jobId, query)
 
     if (awaitJobCompleted(jobId)) {
+      bulkAPI.closeJob(jobId)
+
       val batchInfoList = bulkAPI.getBatchInfoList(jobId)
       val batchInfos = batchInfoList.getBatchInfo().asScala.toList
       val completedBatchInfos = batchInfos.filter(batchInfo => batchInfo.getState().equals("Completed"))
@@ -71,6 +73,7 @@ case class BulkRelation(
 
       sqlContext.sparkSession.read.option("header", true).option("inferSchema", inferSchema).csv(csvData)
     } else {
+      bulkAPI.closeJob(jobId)
       throw new Exception("Job completion timeout")
     }
   }
