@@ -160,8 +160,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val repartitionedRDD = Utils.repartition(data.rdd)
     logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
-    val bulkAPI = APIFactory.getInstance.bulkAPI(username, password, login, version)
-    val writer = new SFObjectWriter(bulkAPI, sfObject, mode, upsert, externalIdFieldName, csvHeader)
+    val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, upsert, externalIdFieldName, csvHeader)
     logger.info("Writing data")
     val successfulWrite = writer.writeData(repartitionedRDD)
     logger.info(s"Writing data was successful was $successfulWrite")
@@ -181,8 +180,6 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       parameters: Map[String, String],
       schema: StructType): BulkRelation = {
     val soql = parameters.get("soql")
-
-    val bulkApi = APIFactory.getInstance.bulkAPI(username, password, login, version)
 
     val sfObject = parameters.get("sfObject")
     if (sfObject.isEmpty) {
@@ -217,9 +214,12 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     }
 
     BulkRelation(
+      username,
+      password,
+      login,
+      version,
       soql.get,
       sfObject.get,
-      bulkApi,
       customHeaders.toList,
       schema,
       sqlContext,
