@@ -105,7 +105,7 @@ case class BulkRelation(
         .sparkSession
         .read
         .option("header", true)
-        .option("inferSchema", true)
+        .option("inferSchema", inferSchema)
         .option("quote", "\"")
         .option("escape", "\"")
         .option("multiLine", true)
