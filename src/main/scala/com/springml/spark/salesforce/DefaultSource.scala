@@ -74,6 +74,9 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val bulkStr = parameters.getOrElse("bulk", "false")
     val bulkFlag = flag(bulkStr, "bulk")
 
+    val queryAllStr = parameters.getOrElse("queryAll", "false")
+    val queryAllFlag = flag(queryAllStr, "queryAll")
+
     validateMutualExclusive(saql, soql, "saql", "soql")
     val inferSchemaFlag = flag(inferSchema, "inferSchema")
 
@@ -81,7 +84,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
           resultVariable, pageSize.toInt, sampleSize.toInt,
-          encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
+          encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean, sdf(dateFormat),
+          queryAllFlag)
     } else {
       if (replaceDatasetNameWithId.toBoolean) {
         logger.warn("Ignoring 'replaceDatasetNameWithId' option as it is not applicable to soql")
@@ -98,7 +102,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
         DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
           null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag,
-          replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
+          replaceDatasetNameWithId.toBoolean, sdf(dateFormat), queryAllFlag)
       }
     }
 
