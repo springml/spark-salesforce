@@ -17,20 +17,20 @@ You can link against this library in your program at the following ways:
 <dependency>
     <groupId>com.springml</groupId>
     <artifactId>spark-salesforce_2.11</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.3</version>
 </dependency>
 ```
 
 ### SBT Dependency
 ```
-libraryDependencies += "com.springml" % "spark-salesforce_2.11" % "1.1.0"
+libraryDependencies += "com.springml" % "spark-salesforce_2.11" % "1.1.3"
 ```
 
 ## Using with Spark shell
 This package can be added to Spark using the `--packages` command line option.  For example, to include it when starting the spark shell:
 
 ```
-$ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.0
+$ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.3
 ```
 
 ## Features
@@ -278,7 +278,7 @@ df.
 * Click Create-->Library and select "Maven Coordinate" as source
 * Click "Search Spark Packages and Maven Central" button
 * Select "spark-salesforce" and click "Create Library" button
-* Library called "spark-salesforce_2.11-1.1.0" will be created
+* Library called "spark-salesforce_2.11-1.1.3" will be created
 * Now attach it to your clusters
 
 #### Upload Databricks table into Salesforce Wave
