@@ -32,7 +32,8 @@ case class DatasetRelation(
     encodeFields: Option[String],
     inferSchema: Boolean,
     replaceDatasetNameWithId: Boolean,
-    sdf: SimpleDateFormat) extends BaseRelation with TableScan {
+    sdf: SimpleDateFormat,
+    queryAll: Boolean) extends BaseRelation with TableScan {
 
   private val logger = Logger.getLogger(classOf[DatasetRelation])
 
@@ -102,7 +103,7 @@ case class DatasetRelation(
   private def querySF(): java.util.List[java.util.Map[String, String]] = {
       var records: java.util.List[java.util.Map[String, String]]= null
 
-      var resultSet = forceAPI.query(query)
+      var resultSet = forceAPI.query(query, queryAll)
       records = resultSet.filterRecords()
 
       while (!resultSet.isDone()) {
