@@ -190,6 +190,13 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       throw new Exception("sfObject must not be empty when performing bulk query")
     }
 
+    val maxCharacterSizeStr = parameters.getOrElse("maxCharacterSize", "4096")
+    val maxCharacterSize = try {
+      maxCharacterSizeStr.toInt
+    } catch {
+      case e: Exception => throw new Exception("maxCharacterSize must be a valid integer")
+    }
+
     val timeoutStr = parameters.getOrElse("timeout", "600000")
     val timeout = try {
       timeoutStr.toLong
@@ -228,7 +235,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       schema,
       sqlContext,
       inferSchemaFlag,
-      timeout
+      timeout,
+      maxCharacterSize
     )
   }
 

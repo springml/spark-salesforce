@@ -34,7 +34,8 @@ case class BulkRelation(
     userSchema: StructType,
     sqlContext: SQLContext,
     inferSchema: Boolean,
-    timeout: Long) extends BaseRelation with TableScan {
+    timeout: Long,
+    maxCharacterSize: Int) extends BaseRelation with TableScan {
 
   import sqlContext.sparkSession.implicits._
 
@@ -77,6 +78,7 @@ case class BulkRelation(
           val parserSettings = new CsvParserSettings()
           parserSettings.setLineSeparatorDetectionEnabled(true)
           parserSettings.getFormat.setNormalizedNewline(' ')
+          parserSettings.setMaxCharsPerColumn(maxCharacterSize)
 
           val readerParser = new CsvParser(parserSettings)
           val parsedInput = readerParser.parseAll(inputReader).asScala
