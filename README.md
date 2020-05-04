@@ -88,7 +88,7 @@ val sfWaveDF = spark.
                 format("com.springml.spark.salesforce").
                 option("username", "your_salesforce_username").
                 option("password", "your_salesforce_password_with_secutiry_token"). //<salesforce login password><security token>
-                option("saql", saql)
+                option("saql", saql).
                 option("inferSchema", "true").
                 load()
 
