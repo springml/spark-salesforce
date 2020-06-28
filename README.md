@@ -62,6 +62,8 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.3
 * `timeout`: (Optional) The maximum time spent polling for the completion of bulk query job. This option can only be used when `bulk` is `true`.
 * `externalIdFieldName`: (Optional) The name of the field used as the external ID for Salesforce Object. This value is only used when doing an update or upsert. Default "Id".
 * `queryAll`: (Optional) Toggle to retrieve deleted and archived records for SOQL queries. Default value is `false`.
+### Options only supported for fetching Salesforce Objects.
+* `batchSize`: (Optional) maximum number of records per batch when performing updates. Defaults to 5000 (note that batches greater than 10000 will result in a error)
 
 
 ### Scala API
