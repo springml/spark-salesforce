@@ -23,7 +23,8 @@ class SFObjectWriter (
     val mode: SaveMode,
     val upsert: Boolean,
     val externalIdFieldName: String,
-    val csvHeader: String
+    val csvHeader: String,
+    val batchSize: Integer
     ) extends Serializable {
 
   @transient val logger = Logger.getLogger(classOf[SFObjectWriter])
@@ -31,12 +32,15 @@ class SFObjectWriter (
   def writeData(rdd: RDD[Row]): Boolean = {
     val csvRDD = rdd.map(row => row.toSeq.map(value => Utils.rowValue(value)).mkString(","))
 
+    val partitionCnt = (1 + csvRDD.count() / batchSize).toInt
+    val partitionedRDD = csvRDD.repartition(partitionCnt)
+
     val jobInfo = new JobInfo(WaveAPIConstants.STR_CSV, sfObject, operation(mode, upsert))
     jobInfo.setExternalIdFieldName(externalIdFieldName)
 
     val jobId = bulkAPI.createJob(jobInfo).getId
 
-    csvRDD.mapPartitionsWithIndex {
+    partitionedRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
         val records = iterator.toArray.mkString("\n")
         var batchInfoId : String = null

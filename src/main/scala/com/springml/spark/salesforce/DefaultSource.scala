@@ -26,6 +26,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
 /**
  * Default source for Salesforce wave data source.
@@ -123,6 +124,15 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val encodeFields = parameters.get("encodeFields")
     val monitorJob = parameters.getOrElse("monitorJob", "false")
     val externalIdFieldName = parameters.getOrElse("externalIdFieldName", "Id")
+    val batchSizeStr = parameters.getOrElse("batchSize", "5000")
+    val batchSize = Try(batchSizeStr.toInt) match {
+      case Success(v)=> v
+      case Failure(e)=> {
+        val errorMsg = "batchSize parameter not an integer."
+        logger.error(errorMsg)
+        throw new Exception(errorMsg)
+      }
+    }
 
     validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
 
@@ -141,7 +151,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     } else {
       logger.info("Updating Salesforce Object")
       updateSalesforceObject(username, password, login, version, sfObject.get, mode,
-          flag(upsert, "upsert"), externalIdFieldName, data)
+          flag(upsert, "upsert"), externalIdFieldName, batchSize, data)
     }
 
     return createReturnRelation(data)
@@ -156,6 +166,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       mode: SaveMode,
       upsert: Boolean,
       externalIdFieldName: String,
+      batchSize: Integer,
       data: DataFrame) {
 
     val csvHeader = Utils.csvHeadder(data.schema)
@@ -164,7 +175,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val repartitionedRDD = Utils.repartition(data.rdd)
     logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
-    val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, upsert, externalIdFieldName, csvHeader)
+    val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, upsert, externalIdFieldName, csvHeader, batchSize)
     logger.info("Writing data")
     val successfulWrite = writer.writeData(repartitionedRDD)
     logger.info(s"Writing data was successful was $successfulWrite")
