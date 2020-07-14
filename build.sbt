@@ -12,7 +12,7 @@ resolvers += "jitpack" at "https://jitpack.io"
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "40.0.0",
   "com.force.api" % "force-partner-api" % "40.0.0",
-  "com.github.loanpal-engineering" % "salesforce-wave-api" % "c9da246",
+  "com.github.loanpal-engineering" % "salesforce-wave-api" % "eb71436",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
