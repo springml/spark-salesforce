@@ -77,6 +77,7 @@ case class BulkRelation(
           val parserSettings = new CsvParserSettings()
           parserSettings.setLineSeparatorDetectionEnabled(true)
           parserSettings.getFormat.setNormalizedNewline(' ')
+          parserSettings.setMaxCharsPerColumn(-1)
 
           val readerParser = new CsvParser(parserSettings)
           val parsedInput = readerParser.parseAll(inputReader).asScala
