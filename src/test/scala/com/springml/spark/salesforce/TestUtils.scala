@@ -81,25 +81,34 @@ class TestUtils extends FunSuite with BeforeAndAfterEach {
     val schema = StructType(columnStruct)
     val inMemoryDF = ss.sqlContext.createDataFrame(inMemoryRDD, schema)
 
-    val repartitionDF = Utils.repartition(inMemoryRDD)
+    val repartitionDF = Utils.repartition(inMemoryRDD, maxBundleSize = 1024 * 1024 * 10L, maxBundleRecords = None)
     assert(repartitionDF.partitions.length == 1)
   }
 
-  test("Test repartition for local CSV file with size less than 10 MB") {
+  test("Test repartition for local CSV file with size less than maxBundleSize") {
     val csvURL= getClass.getResource("/ad-server-data-formatted.csv")
     val csvFilePath = csvURL.getPath
     val csvDF = ss.read.option("header", "true").csv(csvFilePath)
 
-    val repartitionDF = Utils.repartition(csvDF.rdd)
+    val repartitionDF = Utils.repartition(csvDF.rdd, maxBundleSize = 1024 * 1024 * 10L, maxBundleRecords = None)
     assert(repartitionDF.partitions.length == 1)
   }
 
-  test("Test repartition for local CSV file with size > 10 MB and < 20 MB") {
+  test("Test repartition for local CSV file with size less than maxBundleSize but exceeding maxBundleRecords") {
+    val csvURL= getClass.getResource("/ad-server-data-formatted.csv")
+    val csvFilePath = csvURL.getPath
+    val csvDF = ss.read.option("header", "true").csv(csvFilePath)
+
+    val repartitionDF = Utils.repartition(csvDF.rdd, maxBundleSize = 1024 * 1024 * 10L, maxBundleRecords = Some(100))
+    assert(repartitionDF.partitions.length == 4)
+  }
+
+  test("Test repartition for local CSV file with size exceeding maxBundleSize") {
     val csvURL= getClass.getResource("/minified_GDS_90.csv")
     val csvFilePath = csvURL.getPath
     val csvDF = ss.read.option("header", "true").csv(csvFilePath)
 
-    val repartitionDF = Utils.repartition(csvDF.rdd)
+    val repartitionDF = Utils.repartition(csvDF.rdd, maxBundleSize = 1024 * 1024 * 10L, maxBundleRecords = None)
     assert(repartitionDF.partitions.length == 2)
   }
 

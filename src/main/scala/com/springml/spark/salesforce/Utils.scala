@@ -24,12 +24,9 @@ import com.madhukaraphatak.sizeof.SizeEstimator
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
+import org.apache.spark.sql.types.{StructType}
 
-import scala.collection.immutable.HashMap
 import com.springml.spark.salesforce.metadata.MetadataConstructor
-import com.sforce.soap.partner.sobject.SObject
-import scala.concurrent.duration._
 import com.sforce.soap.partner.fault.UnexpectedErrorFault
 
 import scala.concurrent.duration.FiniteDuration
@@ -62,34 +59,30 @@ object Utils extends Serializable {
     })
   }
 
-  def repartition(rdd: RDD[Row]): RDD[Row] = {
-    val totalDataSize = getTotalSize(rdd)
-    val maxBundleSize = 1024 * 1024 * 10l
-    var partitions = 1
-    if (totalDataSize > maxBundleSize) {
-      partitions = Math.round(totalDataSize / maxBundleSize) + 1
-    }
+  def repartition(rdd: RDD[Row], maxBundleSize: Long, maxBundleRecords: Option[Int]): RDD[Row] = {
+    val totalRows = rdd.count()
+    val totalDataSize = getTotalSize(rdd, totalRows)
+
+    val partitionsByBytes = if (totalDataSize > maxBundleSize) Math.round(totalDataSize / maxBundleSize) + 1 else 1
+    val partitionsByRecords = maxBundleRecords.fold(1)(rows => if (totalRows > rows) Math.round(totalRows / rows) + 1 else 1)
+
+    val partitions = Math.max(partitionsByBytes, partitionsByRecords)
 
     val shuffle = rdd.partitions.length < partitions
-    rdd.coalesce(partitions.toInt, shuffle)
+    rdd.coalesce(partitions, shuffle)
   }
 
-  def getTotalSize(rdd: RDD[Row]): Long = {
+  def getTotalSize(rdd: RDD[Row], totalRows: Long): Long = {
     // This can be fetched as optional parameter
     val NO_OF_SAMPLE_ROWS = 10
-    val totalRows = rdd.count()
-    var totalSize = 0l
 
     if (totalRows > NO_OF_SAMPLE_ROWS) {
       val sampleObj = rdd.takeSample(false, NO_OF_SAMPLE_ROWS)
       val sampleRowSize = rowSize(sampleObj)
-      totalSize = sampleRowSize * (totalRows / NO_OF_SAMPLE_ROWS)
+      sampleRowSize * (totalRows / NO_OF_SAMPLE_ROWS)
     } else {
-
-      totalSize = rddSize(rdd)
+      rddSize(rdd)
     }
-
-    totalSize
   }
 
   def rddSize(rdd: RDD[Row]) : Long = {
