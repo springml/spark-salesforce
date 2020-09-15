@@ -18,6 +18,7 @@ package com.springml.spark.salesforce
 import java.text.SimpleDateFormat
 
 import com.springml.salesforce.wave.api.APIFactory
+import org.apache.commons.io.FileUtils.byteCountToDisplaySize
 import org.apache.http.Header
 import org.apache.http.message.BasicHeader
 import org.apache.log4j.Logger
@@ -26,6 +27,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 
 import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 /**
  * Default source for Salesforce wave data source.
@@ -61,29 +63,25 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val saql = parameters.get("saql")
     val soql = parameters.get("soql")
     val resultVariable = parameters.get("resultVariable")
-    val pageSize = parameters.getOrElse("pageSize", "1000")
-    val sampleSize = parameters.getOrElse("sampleSize", "1000")
-    val maxRetry = parameters.getOrElse("maxRetry", "5")
-    val inferSchema = parameters.getOrElse("inferSchema", "false")
+    val pageSize = getIntParam(parameters, "pageSize").getOrElse(1000)
+    val sampleSize = getIntParam(parameters, "sampleSize").getOrElse(1000)
+    val maxRetry = getIntParam(parameters, "maxRetry").getOrElse(5)
+    val inferSchemaFlag = getBooleanParam(parameters, "inferSchema").getOrElse(false)
     val dateFormat = parameters.getOrElse("dateFormat", null)
     // This is only needed for Spark version 1.5.2 or lower
     // Special characters in older version of spark is not handled properly
     val encodeFields = parameters.get("encodeFields")
     val replaceDatasetNameWithId = parameters.getOrElse("replaceDatasetNameWithId", "false")
 
-    val bulkStr = parameters.getOrElse("bulk", "false")
-    val bulkFlag = flag(bulkStr, "bulk")
-
-    val queryAllStr = parameters.getOrElse("queryAll", "false")
-    val queryAllFlag = flag(queryAllStr, "queryAll")
+    val bulkFlag = getBooleanParam(parameters, "bulk").getOrElse(false)
+    val queryAllFlag = getBooleanParam(parameters, "queryAll").getOrElse(false)
 
     validateMutualExclusive(saql, soql, "saql", "soql")
-    val inferSchemaFlag = flag(inferSchema, "inferSchema")
 
     if (saql.isDefined) {
       val waveAPI = APIFactory.getInstance.waveAPI(username, password, login, version)
       DatasetRelation(waveAPI, null, saql.get, schema, sqlContext,
-          resultVariable, pageSize.toInt, sampleSize.toInt,
+          resultVariable, pageSize, sampleSize,
           encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean, sdf(dateFormat),
           queryAllFlag)
     } else {
@@ -98,8 +96,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       if (bulkFlag) {
         createBulkRelation(sqlContext, username, password, login, version, inferSchemaFlag, parameters, schema)
       } else {
-        val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
-          version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
+        val forceAPI = APIFactory.getInstance.forceAPI(username, password, login, version, pageSize, maxRetry)
         DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
           null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag,
           replaceDatasetNameWithId.toBoolean, sdf(dateFormat), queryAllFlag)
@@ -118,16 +115,16 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val login = parameters.getOrElse("login", "https://login.salesforce.com")
     val version = parameters.getOrElse("version", "36.0")
     val usersMetadataConfig = parameters.get("metadataConfig")
-    val upsert = parameters.getOrElse("upsert", "false")
+    val upsertFlag = getBooleanParam(parameters, "upsert").getOrElse(false)
+    val batchSize = getLongParam(parameters, "batchSize").getOrElse(1024 * 1024 * 10L)
+    val batchRecords = getIntParam(parameters, "batchRecords")
     val metadataFile = parameters.get("metadataFile")
-    val encodeFields = parameters.get("encodeFields")
-    val monitorJob = parameters.getOrElse("monitorJob", "false")
+    val monitorJobFlag = getBooleanParam(parameters, "monitorJob").getOrElse(false)
     val externalIdFieldName = parameters.getOrElse("externalIdFieldName", "Id")
 
     validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
 
     if (datasetName.isDefined) {
-      val upsertFlag = flag(upsert, "upsert")
       if (upsertFlag) {
         if (metadataFile == null || !metadataFile.isDefined) {
           sys.error("metadataFile has to be provided for upsert" )
@@ -137,14 +134,14 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       logger.info("Writing dataframe into Salesforce Wave")
       writeInSalesforceWave(username, password, login, version,
           datasetName.get, appName, usersMetadataConfig, mode,
-          flag(upsert, "upsert"), flag(monitorJob, "monitorJob"), data, metadataFile)
+          upsertFlag, monitorJobFlag, batchSize, batchRecords, data, metadataFile)
     } else {
       logger.info("Updating Salesforce Object")
       updateSalesforceObject(username, password, login, version, sfObject.get, mode,
-          flag(upsert, "upsert"), externalIdFieldName, data)
+          upsertFlag, externalIdFieldName, batchSize, batchRecords, data)
     }
 
-    return createReturnRelation(data)
+    createReturnRelation(data)
   }
 
   private def updateSalesforceObject(
@@ -156,13 +153,15 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       mode: SaveMode,
       upsert: Boolean,
       externalIdFieldName: String,
+      batchSize: Long,
+      batchRecords: Option[Int],
       data: DataFrame) {
 
     val csvHeader = Utils.csvHeadder(data.schema)
-    logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
-    logger.info("Repartitioning rdd for 10mb partitions")
-    val repartitionedRDD = Utils.repartition(data.rdd)
-    logger.info("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
+    logger.info("Number of partitions before repartitioning is " + data.rdd.partitions.length)
+    logger.info(s"Repartitioning rdd for ${byteCountToDisplaySize(batchSize)} partitions${batchRecords.fold("")(n => s" with $n records")}")
+    val repartitionedRDD = Utils.repartition(data.rdd, batchSize, batchRecords)
+    logger.info("Number of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
     val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, upsert, externalIdFieldName, csvHeader)
     logger.info("Writing data")
@@ -190,31 +189,14 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       throw new Exception("sfObject must not be empty when performing bulk query")
     }
 
-    val timeoutStr = parameters.getOrElse("timeout", "600000")
-    val timeout = try {
-      timeoutStr.toLong
-    } catch {
-      case e: Exception => throw new Exception("timeout must be a valid integer")
-    }
+    val timeout = getLongParam(parameters, "timeout").getOrElse(600000L)
 
     var customHeaders = ListBuffer[Header]()
-    val pkChunkingStr = parameters.getOrElse("pkChunking", "false")
-    val pkChunking = flag(pkChunkingStr, "pkChunkingStr")
+    val pkChunking = getBooleanParam(parameters, "pkChunking").getOrElse(false)
 
     if (pkChunking) {
-      val chunkSize = parameters.get("chunkSize")
-
-      if (!chunkSize.isEmpty) {
-        try {
-          chunkSize.get.toInt
-        }
-        catch {
-          case e: Exception => throw new Exception("chunkSize must be a valid integer")
-        }
-        customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=${chunkSize.get}")
-      } else {
-        customHeaders += new BasicHeader("Sforce-Enable-PKChunking", "true")
-      }
+      val pkChunkingValue = getIntParam(parameters, "chunkSize").fold("true")(size => s"chunkSize=$size")
+      customHeaders += new BasicHeader("Sforce-Enable-PKChunking", pkChunkingValue)
     }
 
     BulkRelation(
@@ -243,6 +225,8 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       mode: SaveMode,
       upsert: Boolean,
       monitorJob: Boolean,
+      batchSize: Long,
+      batchRecords: Option[Int],
       data: DataFrame,
       metadata: Option[String]) {
     val dataWriter = new DataWriter(username, password, login, version, datasetName, appName)
@@ -257,10 +241,10 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     }
     logger.info(s"Able to write the metadata is $writtenId")
 
-    logger.info("no of partitions before repartitioning is " + data.rdd.partitions.length)
-    logger.info("Repartitioning rdd for 10mb partitions")
-    val repartitionedRDD = Utils.repartition(data.rdd)
-    logger.debug("no of partitions after repartitioning is " + repartitionedRDD.partitions.length)
+    logger.info("Number of partitions before repartitioning is " + data.rdd.partitions.length)
+    logger.info(s"Repartitioning rdd for ${byteCountToDisplaySize(batchSize)} partitions${batchRecords.fold("")(n => s" with $n records")}")
+    val repartitionedRDD = Utils.repartition(data.rdd, batchSize, batchRecords)
+    logger.debug("Number of partitions after repartitioning is " + repartitionedRDD.partitions.length)
 
     logger.info("Writing data")
     val successfulWrite = dataWriter.writeData(repartitionedRDD, writtenId.get)
@@ -322,13 +306,15 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     simpleDateFormat
   }
 
-  private def flag(paramValue: String, paramName: String) : Boolean = {
-    if (paramValue == "false") {
-      false
-    } else if (paramValue == "true") {
-      true
-    } else {
-      sys.error(s"""'$paramName' flag can only be true or false""")
-    }
+  private def getBooleanParam(params: Map[String, String], paramName: String) = params.get(paramName).map {
+    case "false" => false
+    case "true" => true
+    case _ => sys.error(s"'$paramName' flag can only be true or false")
   }
+
+  private def getLongParam(params: Map[String, String], paramName: String) = params.get(paramName)
+    .map(v => Try(v.toLong).getOrElse(sys.error(s"'$paramName' must be of type Long")))
+
+  private def getIntParam(params: Map[String, String], paramName: String) = params.get(paramName)
+    .map(v => Try(v.toInt).getOrElse(sys.error(s"'$paramName' must be of type Int")))
 }
