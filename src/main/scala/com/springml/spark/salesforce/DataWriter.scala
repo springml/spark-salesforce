@@ -28,18 +28,18 @@ import org.apache.spark.sql.SaveMode
  * It uses Partner External Metadata SOAP API to write the dataset
  */
 class DataWriter (
-    val userName: String,
-    val password: String,
-    val login: String,
-    val version: String,
-    val datasetName: String,
-    val appName: String
-    ) extends Serializable {
+                   val userName: String,
+                   val password: String,
+                   val login: String,
+                   val version: String,
+                   val datasetName: String,
+                   val appName: String
+                 ) extends Serializable {
   @transient val logger = Logger.getLogger(classOf[DataWriter])
 
   def writeMetadata(metaDataJson: String,
-      mode: SaveMode,
-      upsert: Boolean): Option[String] = {
+                    mode: SaveMode,
+                    upsert: Boolean): Option[String] = {
     val partnerConnection = createConnection(userName, password, login, version)
     val oper = operation(mode, upsert)
 
@@ -62,12 +62,12 @@ class DataWriter (
         Some(saveResult.getId)
       } else {
         logger.error("failed to write metadata")
-        println("******************************************************************")
-        println("failed to write metadata")
+        logger.error("******************************************************************")
+        logger.error("failed to write metadata")
         logSaveResultError(saveResult)
-        println("******************************************************************")
-        println(metaDataJson)
-        println("******************************************************************")
+        logger.error("******************************************************************")
+        logger.error(metaDataJson)
+        logger.error("******************************************************************")
         None
       }
     }).head
@@ -127,7 +127,6 @@ class DataWriter (
     }).reduce((a, b) => a && b)
     saved
   }
-
 
   private def operation(mode: SaveMode, upsert: Boolean): String = {
     if (upsert) {
