@@ -24,6 +24,12 @@
         <developerConnection>scm:git:git@github.com:springml/spark-salesforce</developerConnection>
         <url>github.com/springml/spark-salesforce</url>
     </scm>
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -62,9 +68,9 @@
             <version>40.0.0</version>
         </dependency>
         <dependency>
-            <groupId>com.springml</groupId>
+            <groupId>com.github.loanpal-engineering</groupId>
             <artifactId>salesforce-wave-api</artifactId>
-            <version>1.0.8-loanpal</version>
+            <version>1d662ac</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -82,11 +88,6 @@
             <artifactId>java-sizeof_2.12</artifactId>
             <version>0.1</version>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>com.fasterxml.jackson.dataformat</groupId>-->
-        <!--            <artifactId>jackson-dataformat-xml</artifactId>-->
-        <!--            <version>2.4.4</version>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core-asl</artifactId>
