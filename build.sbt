@@ -7,11 +7,12 @@ organization := "com.springml"
 scalaVersion := "2.11.8"
 
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "40.0.0",
   "com.force.api" % "force-partner-api" % "40.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.10",
+  "com.github.loanpal-engineering" % "salesforce-wave-api" % "eb71436",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
