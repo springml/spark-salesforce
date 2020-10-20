@@ -141,8 +141,8 @@ testlogger {
 }
 
 
-//def gitlogDir = new File( project.projectDir.toString() + '/.git')
-//if (gitlogDir.exists()) {
-//    apply from: 'ci/git.gradle'
-//    apply from: 'ci/artifactory.gradle'
-//}
+def gitlogDir = new File( project.projectDir.toString() + '/.git')
+if (gitlogDir.exists()) {
+    apply from: 'ci/git.gradle'
+    apply from: 'ci/artifactory.gradle'
+}
