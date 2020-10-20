@@ -1,0 +1,187 @@
+def masterMerge
+pipeline {
+    agent any
+    environment {
+        GIT_COMMITTER_EMAIL = sh(
+                script: "git --no-pager show -s --format='%ae'",
+                returnStdout: true
+        ).trim()
+        GIT_COMMITTER_NAME = sh(
+                script: "git --no-pager show -s --format='%an'",
+                returnStdout: true
+        ).trim()
+    }
+    options {
+        disableConcurrentBuilds()
+    }
+    triggers {
+        pollSCM('')
+    }
+
+
+    stages {
+        stage('Prepare Environment') {
+            steps {
+                sh 'echo Building ${BRANCH_NAME}...'
+                sh (
+                script: "git checkout ${BRANCH_NAME} && git pull && git fetch --tags"
+                )
+            }
+        }
+
+        stage('Development Build') {
+            when {
+                branch 'development'
+            }
+            steps {
+                sh "gradle clean reportScoverage jar shadowJar scaladoc"
+            }
+        }
+
+        stage('Code Promotion to staging') {
+            when {
+                branch 'development'
+            }
+            steps {
+                sh "git push origin HEAD:staging --tags -f"
+            }
+        }
+        stage('Staging Build') {
+            when {
+                branch 'staging'
+            }
+            steps {
+                sh "gradle clean reportScoverage jar shadowJar scaladoc artifactoryPublish"
+            }
+        }
+
+        stage('Push Staging Tag to Staging Branch') {
+            when {
+                branch 'staging'
+            }
+            steps {
+                sh "git push origin --tags -f"
+            }
+        }
+
+        stage('Request for code merge into master branch') {
+            when {
+                branch 'staging'
+            }
+            steps {
+                script {
+                    try {
+                        timeout(time: 60, unit: 'SECONDS') {
+                            masterMerge = input(
+                                    id: 'masterMerge', message: 'Do you want to merge code into master !!', parameters: [
+                                    [$class: 'BooleanParameterDefinition', defaultValue: false, description: '', name: 'Please confirm you agree with this']
+                            ])
+                        }
+                    } catch (err) {
+                        def user = err.getCauses()[0].getUser()
+                        if ('SYSTEM' == user.toString()) {
+                            currentBuild.result = "SUCCESS"
+                        }
+                    }
+                }
+            }
+        }
+
+
+        stage('Push code to Master branch') {
+            when {
+                expression {
+                    masterMerge
+                }
+            }
+            steps {
+                sh "git push origin HEAD:master --tags -f"
+            }
+        }
+
+        stage('Master Build Process ...') {
+            when {
+                branch 'master'
+            }
+            steps {
+                sh "gradle clean reportScoverage jar shadowJar scaladoc artifactoryPublish"
+            }
+        }
+
+
+        stage('Push master Tag to master Branch') {
+            when {
+                branch 'master'
+            }
+            steps {
+                sh "git push origin --tags -f"
+            }
+        }
+
+        stage('Deploy code into Production environment') {
+            when {
+                branch 'master'
+            }
+            steps {
+                sh 'echo Code deployment goes here ...'
+            }
+        }
+    }
+
+    post {
+        always {
+            emailext body: """
+                |Hi ${env.GIT_COMMITTER_NAME},
+
+                |Build for ${env.GIT_COMMIT} in ${env.BRANCH_NAME} commenced.
+
+                |Please go to ${env.BUILD_URL} and verify the build
+
+                |Mail from / Build Server.
+                """.stripMargin().stripIndent(),
+                    subject: """Build Update for - ${JOB_NAME}  ${BUILD_DISPLAY_NAME} - ${
+                        currentBuild.currentResult
+                    }""", to: "${env.GIT_COMMITTER_EMAIL}"
+        }
+            success {
+                // publish html
+                publishHTML (target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'build/reports/scoverage',
+                        reportFiles: 'index.html',
+                        reportName: 'Test Coverage Report'
+                ])
+                publishHTML (target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'build/reports/tests/testScoverage',
+                        reportFiles: 'index.html',
+                        reportName: 'Test Summary Report'
+                ])
+                publishHTML (target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'build/docs/scaladoc',
+                        reportFiles: 'index.html',
+                        reportName: 'Scala Docs'
+                ])
+                archiveArtifacts artifacts: 'build/libs/*.jar', allowEmptyArchive: true, fingerprint: true
+                junit allowEmptyResults: true,  testResults: 'build/test-results/**/*.xml'
+                step([$class: 'CoberturaPublisher',
+                      autoUpdateHealth: false,
+                      autoUpdateStability: false,
+                      coberturaReportFile: 'build/reports/scoverage/cobertura.xml',
+                      failUnhealthy: false,
+                      failUnstable: false,
+                      maxNumberOfBuilds: 0,
+                      onlyStable: false,
+                      enableNewApi : true,
+                      sourceEncoding: 'ASCII',
+                      zoomCoverageChart: false])
+            }
+        }
+}

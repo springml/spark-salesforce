@@ -1,0 +1,148 @@
+/*
+ *  Copyright (C) 2019-2020 WorkSafe Victoria
+ *  All Rights Reserved.
+ *
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ *
+ */
+
+
+buildscript {
+    ext.scalaVariant = "2.12"
+    ext.sparkVersion = "3.0.0"
+
+    repositories {
+        maven {
+            url "${gradle.artifactoryUrl}/prd-imf-virtual"
+            if (System.getenv("ARTIFACTORY_USER") || Project.hasProperty('artifactoryUser')) {
+                credentials {
+                    username = System.getenv("ARTIFACTORY_USER") ?: artifactoryUser
+                    password = System.getenv("ARTIFACTORY_PASSWORD") ?: artifactoryPassword
+                }
+            }
+        }
+        dependencies {
+            classpath "org.ajoberstar:grgit:2.3.0"
+            classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4+"
+        }
+    }
+}
+
+plugins {
+    id 'scala'
+    id "org.scoverage" version "4.0.2"
+    id "com.github.johnrengelman.shadow" version "5.2.0"
+    id "jacoco"
+    id "java-library"
+    id "java"
+    id "com.adarshr.test-logger" version "1.3.0"
+    id "maven-publish"
+}
+
+group "${gradle.projectGroup}"
+
+repositories {
+    maven {
+        url "${gradle.artifactoryUrl}/prd-imf-virtual"
+        if (System.getenv("ARTIFACTORY_USER") || Project.hasProperty('artifactoryUser')) {
+            credentials {
+                username = System.getenv("ARTIFACTORY_USER") ?: artifactoryUser
+                password = System.getenv("ARTIFACTORY_PASSWORD") ?: artifactoryPassword
+            }
+        }
+    }
+}
+configurations {
+    assembly
+    compile.extendsFrom assembly
+}
+
+configurations {
+    provided
+    compile.extendsFrom provided
+}
+
+configurations {
+    testImplementation.extendsFrom compileOnly
+}
+
+configurations {
+    archivesBaseName = "${gradle.projectName}" + "_${scalaVariant}"
+}
+
+dependencies {
+    api group: 'org.scala-lang', name :'scala-library', version : "$scalaVariant"+'.12'
+
+    //Spring ML Deps
+    compile group: 'com.force.api', name: 'force-wsc', version: '40.0.0'
+    compile group: 'com.force.api', name: 'force-partner-api', version: '40.0.0'
+    compile group: 'au.gov.wsv.imf', name: 'salesforce-wave-api', version: '0.04'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.0.31-beta'
+
+    //Spark dependencies(only for compile)
+    compileOnly group: 'org.apache.spark', name: 'spark-core_'+"$scalaVariant", version:"$sparkVersion"
+    compileOnly group: 'org.apache.spark', name: 'spark-sql_'+"$scalaVariant", version:"$sparkVersion"
+    compileOnly group: 'org.apache.spark', name: 'spark-hive_'+"$scalaVariant", version:"$sparkVersion"
+
+
+    // Use Scalatest for testing our library
+    testImplementation group: "org.scalatest", name: "scalatest_$scalaVariant", version :"3.0.5"
+    testImplementation group: "junit", name: "junit", version :"4.12"
+    testImplementation group: "com.github.stefanbirkner", name: "system-rules", version: "1.16.0"
+    testRuntimeOnly group: "org.pegdown", name: "pegdown", version: "1.6.0"
+    testImplementation group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
+}
+
+
+compileScala {
+    scalaCompileOptions.additionalParameters = ["-feature"]
+}
+
+shadowJar {
+    zip64 true
+    project.configurations.implementation.canBeResolved = true
+    configurations = [project.configurations.implementation]
+}
+
+tasks.build.dependsOn tasks.shadowJar
+
+test {
+    useJUnit {}
+    jvmArgs '-Xmx1024m'
+    testLogging.showStandardStreams = true
+    reports {
+        junitXml.enabled = true
+    }
+
+}
+
+
+testlogger {
+    theme 'standard'
+    showExceptions true
+    slowThreshold 10000
+    showSummary true
+    showStandardStreams false
+}
+
+
+//def gitlogDir = new File( project.projectDir.toString() + '/.git')
+//if (gitlogDir.exists()) {
+//    apply from: 'ci/git.gradle'
+//    apply from: 'ci/artifactory.gradle'
+//}

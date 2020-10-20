@@ -15,9 +15,9 @@
  */
 package com.springml.spark.salesforce.examples
 
-import org.apache.spark.sql.{Row, SQLContext}
-import org.apache.spark.sql.types.{StructType, StringType, StructField}
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.sql.{Row, SQLContext, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Writing in memory csv data to salesforce
@@ -27,8 +27,14 @@ object InMemoryWrite {
   def main(args: Array[String]) {
 
     val sparkConf = new SparkConf().setMaster(args(0)).setAppName("csv write")
-    val sc = new SparkContext(sparkConf)
-    val sqlContext = new SQLContext(sc)
+    val sparkSession = SparkSession
+      .builder()
+      .config(sparkConf)
+      .getOrCreate()
+    val sc = sparkSession.sparkContext
+    val sqlContext = sparkSession.sqlContext
+
+    //new SQLContext(sc)
     val dataSetName = args(1)
 
     val inMemoryData = (0 to 500).map(value => {

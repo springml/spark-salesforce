@@ -16,22 +16,29 @@
 
 package com.springml.spark.salesforce
 
+import com.fasterxml.jackson.databind.ObjectMapper
+
 import scala.io.Source
 import scala.util.parsing.json._
 import com.sforce.soap.partner.{Connector, PartnerConnection, SaveResult}
 import com.sforce.ws.ConnectorConfig
-import com.madhukaraphatak.sizeof.SizeEstimator
+import org.apache.spark.util.SizeEstimator
+
+import scala.collection.JavaConverters.mapAsScalaMapConverter
+//import com.madhukaraphatak.sizeof.SizeEstimator
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StructType}
 
 import scala.collection.immutable.HashMap
+//import scala.collection.JavaConverters._
 import com.springml.spark.salesforce.metadata.MetadataConstructor
 import com.sforce.soap.partner.sobject.SObject
 import scala.concurrent.duration._
 import com.sforce.soap.partner.fault.UnexpectedErrorFault
 
+import scala.collection.JavaConverters.mapAsScalaMap
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
@@ -269,9 +276,11 @@ object Utils extends Serializable {
   }
 
   private def readJSON(jsonContent : String) : Map[String, Map[String, String]]= {
-    val result = JSON.parseFull(jsonContent)
-    val resMap: Map[String, Map[String, String]] = result.get.asInstanceOf[Map[String, Map[String, String]]]
-    resMap
+    val mapper = new ObjectMapper()
+    mapper.readValue(jsonContent,classOf[java.util.Map[String,java.util.Map[String,String]]]).asScala.toMap.map(x => (x._1,x._2.asScala.toMap))
+//    val result = JSON.parseFull(jsonContent)
+//    val resMap: Map[String, Map[String, String]] = result.get.asInstanceOf[Map[String, Map[String, String]]]
+//    resMap
   }
 
 }

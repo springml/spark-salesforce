@@ -1,0 +1,119 @@
+/*
+ *  Copyright (C) 2019-2020 WorkSafe Victoria
+ *  All Rights Reserved.
+ *
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ *
+ */
+
+apply plugin: "org.ajoberstar.grgit"
+
+ext {
+    gitRepo = grgit.open(dir : rootProject.projectDir)
+    gitHead = gitRepo.head()
+    gitBranchName = gitRepo.branch.getCurrent().name
+    gitRemoteUrl = gitRepo.remote.list()[0].url
+    gitTag = null
+    artifactoryRepoKey = null
+    artifactoryUser = null
+    artifactoryPassword = null
+    release = ""
+    buildHash = gitHead.id
+    buildDate = new Date()
+    nextMinorVersion = null
+    nextMajorVersion = null
+}
+
+
+def getCurrentTag() {
+    def gitCurrentTag = [:]
+    if (gitRepo.tag.list().isEmpty()) {
+        gitCurrentTag.put('tagID', '0.00')
+        gitCurrentTag.put('commitID', gitHead.id)
+    } else {
+        def tagList = [:]
+        gitRepo.tag.list().each {
+            if (it.name ==~ /v?\d+.\d+.*/) {
+                tagList.put(it.name.replaceAll("v", "").replaceAll("-.*", "").toDouble(), it.commit.id)
+            }
+        }
+        def latestTag = tagList.keySet().toList().sort().last()
+        gitCurrentTag.put('tagID', latestTag)
+        gitCurrentTag.put('commitID', tagList.get(latestTag))
+        println("build for \n currentTag: "+latestTag+", tagCommitId : "+ tagList.get(latestTag))
+    }
+    return gitCurrentTag
+}
+
+def getNextVersion( tag ) {
+    def prevVer = (tag.get("tagID") =~ /(\d+.\d+).*/)[0][1]
+    //val nonMergedCommits = gitRepo.log(maxCommits: 10).find { it.parentIds.size() == 1 }
+
+    if (gitHead.id.equalsIgnoreCase(tag.get("commitID")) && ! tag.get("tagID").equals("0.00") ) {
+        nextMinorVersion=  prevVer
+        nextMajorVersion = (tag.get("tagID") ==~ /(\d+.\d+)/) ? prevVer : (prevVer.toDouble().toInteger() + 1) + ".00"
+    } else {
+        def minorIncVer = (prevVer.toFloat()*100 + 1)/100
+        nextMinorVersion=  minorIncVer.round(2)
+        nextMajorVersion=  ( ( prevVer.toFloat().toInteger() + 1 ) +".00" )
+    }
+    def rMap = [:]
+    rMap.put("nextMinorVersion", nextMinorVersion)
+    rMap.put( "nextMajorVersion" , nextMajorVersion)
+    return  rMap
+}
+
+switch (gitBranchName) {
+    case "master":
+        gitTag = gitRepo.tag.list().find {
+         it.name ==~ /\d+\.\d+-rc/
+        }
+        if (!gitTag) {
+            throw new PublishException("missing a release candidate (version tag i.e. '1.0-rc') on the commit of the master branch")
+        }
+        version = (currentTag.get("tagID") =~ /(\d+.\d+).*/)[0][1]
+        artifactoryRepoKey = System.getenv("ARTIFACTORY_PRD_REPO_KEY") ?: "${prdArtifactoryRepoKey}"
+        artifactoryUser = System.getenv("ARTIFACTORY_USER") ?: "${prdArtifactoryUser}"
+        artifactoryPassword = System.getenv("ARTIFACTORY_PASSWORD") ?: "${prdArtifactoryPassword}"
+        break
+
+    case "staging":
+        gitTag = gitRepo.tag.list().find {
+            it.name ==~ /\d+\.\d+-dev/
+        }
+        if (!gitTag) {
+            throw new PublishException("missing a version tag (i.e. '1.01-dev') on the commit of the staging branch")
+        }
+        version = (currentTag.get("tagID") =~ /(\d+.\d+).*/)[0][1]+"-rc"
+        artifactoryRepoKey = System.getenv("ARTIFACTORY_QAT_REPO_KEY")  ?: "${qatArtifactoryRepoKey}"
+        artifactoryUser = System.getenv("ARTIFACTORY_USER") ?: "${qatArtifactoryUser}"
+        artifactoryPassword = System.getenv("ARTIFACTORY_PASSWORD") ?: "${qatArtifactoryPassword}"
+        break
+
+    case "development":
+        version = getNextVersion(currentTag).get("nextMinorVersion")+"-dev"
+        break
+
+    default:
+        version = "SNAPSHOT"
+        release = ""
+        artifactoryRepoKey = ""
+        artifactoryUser = ""
+        artifactoryPassword = ""
+        break
+}

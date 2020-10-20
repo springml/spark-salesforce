@@ -3,13 +3,14 @@ package com.springml.spark.salesforce
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{ FunSuite, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfterEach, FunSuite}
 import com.springml.salesforce.wave.api.BulkAPI
-import org.apache.spark.{ SparkConf, SparkContext}
-import com.springml.salesforce.wave.model.{ JobInfo, BatchInfo}
+import org.apache.spark.{SparkConf, SparkContext}
+import com.springml.salesforce.wave.model.{BatchInfo, JobInfo}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ Row, DataFrame, SQLContext}
-import org.apache.spark.sql.types.{ StructType, StringType, StructField}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.scalatest.mockito.MockitoSugar
 
 class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterEach {
   val contact = "Contact";
@@ -22,6 +23,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
 
   var sparkConf: SparkConf = _
   var sc: SparkContext = _
+  var sparkSession: SparkSession = _
 
   override def beforeEach() {
     val jobInfo = new JobInfo
@@ -37,7 +39,12 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
     when(bulkAPI.isCompleted(jobId)).thenReturn(true)
 
     sparkConf = new SparkConf().setMaster("local").setAppName("Test SF Object Update")
-    sc = new SparkContext(sparkConf)
+    sparkSession = SparkSession
+      .builder()
+      .config(sparkConf)
+      .getOrCreate()
+    sc = sparkSession.sparkContext
+    val sqlContext = sparkSession.sqlContext
   }
 
   private def sampleDF() : DataFrame = {
@@ -58,7 +65,7 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
       StructField("id", StringType, true) ::
       StructField("desc", StringType, true) :: Nil)
 
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     sqlContext.createDataFrame(rdd, schema)
   }
 

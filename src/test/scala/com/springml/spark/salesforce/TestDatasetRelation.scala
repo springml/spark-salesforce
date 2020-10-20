@@ -1,18 +1,18 @@
 package com.springml.spark.salesforce
 
 import java.text.SimpleDateFormat
-import java.util.{ArrayList, HashMap}
 
 import com.springml.salesforce.wave.api.{ForceAPI, WaveAPI}
 import com.springml.salesforce.wave.model.{QueryResult, Results, SOQLResult}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
+import java.util.{ArrayList,HashMap}
 
 /**
   * Test DatasetRelation with schema and without schema
@@ -32,6 +32,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
 
   var sparkConf: SparkConf = _
   var sc: SparkContext = _
+  var sparkSession: SparkSession = _
+
 
   override def beforeEach() {
     when(waveAPI.query(saql)).thenReturn(qr)
@@ -43,7 +45,12 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
     when(forceAPI.query(soql)).thenReturn(soqlQR);
     when(forceAPI.query(soql, false)).thenReturn(soqlQR);
     sparkConf = new SparkConf().setMaster("local").setAppName("Test Dataset Relation")
-    sc = new SparkContext(sparkConf)
+    sparkSession = SparkSession
+      .builder()
+      .config(sparkConf)
+      .getOrCreate()
+    sc = sparkSession.sparkContext
+    val sqlContext = sparkSession.sqlContext
   }
 
   override def afterEach() {
@@ -117,7 +124,8 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test read without schema") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
+    //val sqlContext = new SQLContext(sc)
     val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, false,
       false, null, false)
     val rdd = dr.buildScan()
@@ -126,7 +134,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test read with schema") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     val countField = StructField("count", IntegerType, true)
     val deviceTypeField = StructField("device_type", StringType, true)
     val createdTypeField = StructField("created_date", TimestampType, true)
@@ -142,7 +150,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test queryMore") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     var resultVariable = None: Option[String]
     resultVariable = Some("q")
     val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, resultVariable, 2, 100, null,
@@ -156,7 +164,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test read using soql without schema") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     val dr = DatasetRelation(null, forceAPI, soql, null, sqlContext, null, 0, 100, null, false,
       false, null, false)
     val rdd = dr.buildScan()
@@ -165,7 +173,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test read using soql with schema") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     val countField = StructField("count", IntegerType, true)
     val deviceTypeField = StructField("device_type", StringType, true)
 
@@ -180,7 +188,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test infer schema") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     val dr = DatasetRelation(waveAPI, null, saql, null, sqlContext, null, 0, 100, null, true,
       false, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"), false)
 
@@ -310,7 +318,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test should not replace dataset name") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     val saql = """q = load "Account";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
@@ -325,7 +333,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test ("test should replace dataset name") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
     val saql = """q = load "Account";
                   q = group q by all;
                   q = foreach q generate count() as 'count';
@@ -358,7 +366,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test("queryAll false") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
 
     reset(forceAPI)
     when(forceAPI.query(soql, false)).thenReturn(soqlQR);
@@ -373,7 +381,7 @@ class TestDatasetRelation extends FunSuite with MockitoSugar with BeforeAndAfter
   }
 
   test("queryAll true") {
-    val sqlContext = new SQLContext(sc)
+    val sqlContext = sparkSession.sqlContext
 
     reset(forceAPI)
     when(forceAPI.query(soql, true)).thenReturn(soqlQR);

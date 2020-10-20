@@ -15,7 +15,10 @@ import org.apache.spark.sql.types.{BooleanType, ByteType, DataType, DateType, De
 import org.apache.spark.sql.types.{DoubleType, FloatType, IntegerType, LongType, ShortType}
 import org.apache.spark.sql.types.{StructField, StructType, StringType, TimestampType}
 
-import scala.collection.JavaConversions.{asScalaBuffer, mapAsScalaMap}
+//import scala.collection.JavaConversions.{asScalaBuffer, mapAsScalaMap}
+//import scala.collection.JavaConverters.{asScalaBuffer,mapAsScalaMap}
+//import scala.collection.JavaConverters.{asScalaBufferConverter,mapAsScalaMapConverter,bufferAsJavaList}
+import scala.collection.JavaConverters._
 
 /**
  * Relation class for reading data from Salesforce and construct RDD
@@ -164,12 +167,12 @@ case class DatasetRelation(
     // Constructing RDD from records
     val sampleRowArray = new Array[Array[String]](getSampleSize)
     for (i <- 0 to getSampleSize - 1) {
-      val row = records(i)
+      val row = records.asScala(i)
       logger.debug("rows size : " + row.size())
       val fieldArray = new Array[String](row.size())
 
       var fieldIndex: Int = 0
-      for (column <- row) {
+      for (column <- row.asScala) {
         fieldArray(fieldIndex) = column._2
         fieldIndex = fieldIndex + 1
       }
@@ -199,11 +202,11 @@ case class DatasetRelation(
     val sampleList = sample
 
     var header : Array[String] = null
-    for (currentRecord <- sampleList) {
+    for (currentRecord <- sampleList.asScala) {
       logger.debug("record size " + currentRecord.size())
       val recordHeader = new Array[String](currentRecord.size())
       var index: Int = 0
-      for ((k, _) <- currentRecord) {
+      for ((k, _) <- currentRecord.asScala) {
         logger.debug("Key " + k)
         recordHeader(index) = k
         index = index + 1
@@ -218,14 +221,14 @@ case class DatasetRelation(
   }
 
   private def sample: java.util.List[java.util.Map[String, String]] = {
-    val sampleRecords = new java.util.ArrayList[java.util.Map[String, String]]()
+    val sampleRecords = (new java.util.ArrayList[java.util.Map[String, String]]()).asScala
     val random = new Random()
     val totalSize = records.size()
     for (i <- 0 to getSampleSize) {
       sampleRecords += records.get(random.nextInt(totalSize))
     }
 
-    sampleRecords
+    sampleRecords.asJava
   }
 
   override def schema: StructType = {
@@ -255,7 +258,7 @@ case class DatasetRelation(
     logger.info("Total records size : " + records.size())
     val rowArray = new Array[Row](records.size())
     var rowIndex: Int = 0
-    for (row <- records) {
+    for (row <- records.asScala) {
       val fieldArray = new Array[Any](schemaFields.length)
       logger.debug("Total Fields length : " + schemaFields.length)
       var fieldIndex: Int = 0
@@ -274,8 +277,8 @@ case class DatasetRelation(
   }
 
   private def fieldValue(row: java.util.Map[String, String], name: String) : String = {
-    if (row.contains(name)) {
-      row(name)
+    if (row.asScala.contains(name)) {
+      row.asScala(name)
     } else {
       logger.debug("Value not found for " + name)
       ""
