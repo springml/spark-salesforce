@@ -1,10 +1,12 @@
 # Spark Salesforce Library
 
+#This is fork and modification of original version of spark sales force library.
+
 A library for connecting Spark with Salesforce and Salesforce Wave.
 
 ## Requirements
 
-This library requires Spark 2.x.
+This library requires Spark 2.x, spark 3.x
 
 For Spark 1.x support, please check [spark1.x](https://github.com/springml/spark-salesforce/tree/spark1.x) branch.
 
