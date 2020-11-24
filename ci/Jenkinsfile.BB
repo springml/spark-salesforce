@@ -5,7 +5,7 @@ def agentLabel = [:]
 
 def projectRepo = [:]
     projectRepo["key"] = "IMFDE"
-    projectRepo["repoName"] = "imfutils"
+    projectRepo["repoName"] = "spark-salesforce"
     projectRepo["url"] = "https://bitbucket-aws.itss.vic.gov.au"
 
 pipeline {
@@ -191,15 +191,15 @@ pipeline {
             emailext body: """
                 |Hi ${env.GIT_COMMITTER_NAME},
 
-                |Build for ${env.GIT_COMMIT} in ${env.BRANCH_NAME} completed with ${currentBuild.currentResult} status.
+                |Build for ${env.GIT_COMMIT} in ${env.BRANCH_NAME} commenced.
 
-                |Please go to ${env.BUILD_URL} and verify.
+                |Please go to ${env.BUILD_URL} and verify the build
 
                 |Mail from / Build Server.
                 """.stripMargin().stripIndent(),
-                    subject: """Build Update for - ${JOB_NAME}  ${BUILD_DISPLAY_NAME} - ${currentBuild.currentResult}""",
-                    to: "${env.GIT_COMMITTER_EMAIL}",
-                    from: "jenkins-imf@warksafe.vic.gov.au"
+                    subject: """Build Update for - ${JOB_NAME}  ${BUILD_DISPLAY_NAME} - ${
+                        currentBuild.currentResult
+                    }""", to: "${env.GIT_COMMITTER_EMAIL}"
         }
             success {
                 // publish html
