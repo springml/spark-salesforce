@@ -308,4 +308,4 @@ df.
 Salesforce wave does require atleast one "Text" field. So please make sure the dataframe has atleast one string type.
 
 ## Building From Source
-This library is built with [SBT](http://www.scala-sbt.org/0.13/docs/Command-Line-Reference.html), which is automatically downloaded by the included shell script. To build a JAR file simply run `sbt/sbt package` from the project root. The build configuration includes support for both Scala 2.10 and 2.11.
+This library is built with [SBT](http://www.scala-sbt.org/0.13/docs/Command-Line-Reference.html), which is automatically downloaded by the included shell script. To build a JAR file simply run `sbt +package` from the project root. The build configuration includes support for both Scala 2.11 and 2.12.
