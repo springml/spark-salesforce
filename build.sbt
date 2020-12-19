@@ -4,7 +4,9 @@ version := "1.1.3"
 
 organization := "com.springml"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.10"
+
+crossScalaVersions := Seq("2.11.12", "2.12.10")
 
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
@@ -27,8 +29,7 @@ resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositor
 
 resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
-libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.3" % "test"
 libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.4.4"
 libraryDependencies += "org.codehaus.woodstox" % "woodstox-core-asl" % "4.4.0"
 
@@ -37,7 +38,7 @@ spName := "springml/spark-salesforce"
 
 spAppendScalaVersion := true
 
-sparkVersion := "2.2.0"
+sparkVersion := "2.4.5"
 
 sparkComponents += "sql"
 
