@@ -21,26 +21,26 @@ import scala.collection.JavaConversions.{asScalaBuffer, mapAsScalaMap}
  * Relation class for reading data from Salesforce and construct RDD
  */
 case class DatasetRelation(
-    waveAPI: WaveAPI,
-    forceAPI: ForceAPI,
-    query: String,
-    userSchema: StructType,
-    sqlContext: SQLContext,
-    resultVariable: Option[String],
-    pageSize: Int,
-    sampleSize: Int,
-    encodeFields: Option[String],
-    inferSchema: Boolean,
-    replaceDatasetNameWithId: Boolean,
-    sdf: SimpleDateFormat,
-    queryAll: Boolean) extends BaseRelation with TableScan {
+                            waveAPI: WaveAPI,
+                            forceAPI: ForceAPI,
+                            query: String,
+                            userSchema: StructType,
+                            sqlContext: SQLContext,
+                            resultVariable: Option[String],
+                            pageSize: Int,
+                            sampleSize: Int,
+                            encodeFields: Option[String],
+                            inferSchema: Boolean,
+                            replaceDatasetNameWithId: Boolean,
+                            sdf: SimpleDateFormat,
+                            queryAll: Boolean) extends BaseRelation with TableScan {
 
   private val logger = Logger.getLogger(classOf[DatasetRelation])
 
   val records = read()
 
   def read(): java.util.List[java.util.Map[String, String]] = {
-    var records: java.util.List[java.util.Map[String, String]]= null
+    var records: java.util.List[java.util.Map[String, String]] = null
     // Query getting executed here
     if (waveAPI != null) {
       records = queryWave()
@@ -52,7 +52,7 @@ case class DatasetRelation(
   }
 
   private def queryWave(): java.util.List[java.util.Map[String, String]] = {
-    var records: java.util.List[java.util.Map[String, String]]= null
+    var records: java.util.List[java.util.Map[String, String]] = null
 
     var saql = query
     if (replaceDatasetNameWithId) {
@@ -77,7 +77,7 @@ case class DatasetRelation(
     records
   }
 
-  def replaceDatasetNameWithId(query : String, startIndex : Integer) : String = {
+  def replaceDatasetNameWithId(query: String, startIndex: Integer): String = {
     var modQuery = query
 
     logger.debug("start Index : " + startIndex)
@@ -101,25 +101,23 @@ case class DatasetRelation(
   }
 
   private def querySF(): java.util.List[java.util.Map[String, String]] = {
-      var records: java.util.List[java.util.Map[String, String]]= null
+    var records: java.util.List[java.util.Map[String, String]] = null
 
-      var resultSet = forceAPI.query(query, queryAll)
-      records = resultSet.filterRecords()
+    var resultSet = forceAPI.query(query, queryAll)
+    records = resultSet.filterRecords()
 
-      while (!resultSet.isDone()) {
-        resultSet = forceAPI.queryMore(resultSet)
-        records.addAll(resultSet.filterRecords())
-      }
+    while (!resultSet.isDone()) {
+      resultSet = forceAPI.queryMore(resultSet)
+      records.addAll(resultSet.filterRecords())
+    }
 
-      return records
+    return records
   }
 
   private def cast(fieldValue: String, toType: DataType,
-      nullable: Boolean = true, fieldName: String): Any = {
-    if (fieldValue == null)
-      null
-    else if (fieldValue == "" && nullable && !toType.isInstanceOf[StringType]) {
-      null
+                   nullable: Boolean = true, fieldName: String): Any = {
+    if (fieldValue == null || fieldValue == "") {
+      "#N/A"
     } else {
       toType match {
         case _: ByteType => fieldValue.toByte
@@ -152,7 +150,7 @@ case class DatasetRelation(
     }
   }
 
-  private def shouldEncode(fieldName: String) : Boolean = {
+  private def shouldEncode(fieldName: String): Boolean = {
     if (encodeFields != null && encodeFields.isDefined) {
       val toBeEncodedField = encodeFields.get.split(",")
       return toBeEncodedField.contains(fieldName)
@@ -183,14 +181,14 @@ case class DatasetRelation(
     sqlContext.sparkContext.parallelize(sampleRowArray)
   }
 
-  private def getSampleSize : Integer = {
+  private def getSampleSize: Integer = {
     // If the record is less than sampleSize, then the whole data is used as sample
     val totalRecordsSize = records.size()
     logger.debug("Total Record Size: " + totalRecordsSize)
     if (totalRecordsSize < sampleSize) {
       logger.debug("Total Record Size " + totalRecordsSize
-          + " is Smaller than Sample Size "
-          + sampleSize + ". So total records are used for sampling")
+        + " is Smaller than Sample Size "
+        + sampleSize + ". So total records are used for sampling")
       totalRecordsSize
     } else {
       sampleSize
@@ -200,7 +198,7 @@ case class DatasetRelation(
   private def header: Array[String] = {
     val sampleList = sample
 
-    var header : Array[String] = null
+    var header: Array[String] = null
     for (currentRecord <- sampleList) {
       logger.debug("record size " + currentRecord.size())
       val recordHeader = new Array[String](currentRecord.size())
@@ -275,7 +273,7 @@ case class DatasetRelation(
     sqlContext.sparkContext.parallelize(rowArray)
   }
 
-  private def fieldValue(row: java.util.Map[String, String], name: String) : String = {
+  private def fieldValue(row: java.util.Map[String, String], name: String): String = {
     if (row.contains(name)) {
       row(name)
     } else {
