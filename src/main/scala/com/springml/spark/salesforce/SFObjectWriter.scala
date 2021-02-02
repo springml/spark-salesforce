@@ -34,7 +34,7 @@ class SFObjectWriter(
     val csvRDD = rdd.map { row =>
       val schema = row.schema.fields
       row.toSeq.indices.map(
-        index => Utils.cast(row, schema(index).dataType, index)
+        index => Utils.rowValue(row, schema(index).dataType, index)
       ).mkString(",")
     }
 

@@ -26,7 +26,7 @@ import com.springml.spark.salesforce.metadata.MetadataConstructor
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{DataType, DateType, StringType, StructType, TimestampType}
+import org.apache.spark.sql.types.{BooleanType, DataType, StringType, StructType}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.io.Source
@@ -134,21 +134,9 @@ object Utils extends Serializable {
           rowValue(fieldValue)
         }
       }
-      case _: DateType => {
-        val fieldValue = row.getAs[java.sql.Date](index)
-        if (fieldValue == null) {
-          rowValue(null)
-        } else {
-          formatter.format(fieldValue)
-        }
-      }
-      case _: TimestampType => {
-        val fieldValue = row.getAs[java.sql.Timestamp](index)
-        if (fieldValue == null) {
-          rowValue(null)
-        } else {
-          formatter.format(fieldValue)
-        }
+      case _: BooleanType => {
+        // salesforce doesn't allow null booleans
+        rowValue(row.getAs[Boolean](index))
       }
       case _ => rowValue(row.get(index))
     }
