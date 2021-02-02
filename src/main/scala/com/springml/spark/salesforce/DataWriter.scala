@@ -80,6 +80,7 @@ class DataWriter (
         index =>  Utils.cast(row, schema(index).dataType, index)
       ).mkString(",")
     }
+
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
         @transient val logger = Logger.getLogger(classOf[DataWriter])
