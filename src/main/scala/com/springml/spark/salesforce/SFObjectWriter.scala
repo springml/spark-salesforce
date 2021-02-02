@@ -32,9 +32,9 @@ class SFObjectWriter(
   def writeData(rdd: RDD[Row]): Boolean = {
 
     val csvRDD = rdd.map { row =>
-      val schema = row.schema
+      val schema = row.schema.fields
       row.toSeq.indices.map(
-        index => Utils.cast(row, schema, index)
+        index => Utils.cast(row, schema(index).dataType, index)
       ).mkString(",")
     }
 

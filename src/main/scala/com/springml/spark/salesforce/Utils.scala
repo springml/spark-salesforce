@@ -125,6 +125,7 @@ object Utils extends Serializable {
   }
 
   def cast(row: Row, toType: DataType, index: Int): String = {
+    toType
     toType match {
       case _: StringType => {
         val fieldValue = row.getAs[String](index)
