@@ -116,7 +116,7 @@ case class DatasetRelation(
 
   private def cast(fieldValue: String, toType: DataType,
                    nullable: Boolean = true, fieldName: String): Any = {
-    if (fieldValue == null || fieldValue == "") {
+    if (fieldValue == null || fieldValue.isEmpty) {
       "#N/A"
     } else {
       toType match {
