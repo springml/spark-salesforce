@@ -111,7 +111,7 @@ object Utils extends Serializable {
 
   def rowValue(rowVal: Any): String = {
     if (rowVal == null) {
-      ""
+      "#NA"
     } else {
       var value = rowVal.toString()
       if (value.contains("\"")) {
@@ -128,17 +128,10 @@ object Utils extends Serializable {
     toType match {
       case _: StringType => {
         val fieldValue = row.getAs[String](index)
-        if (fieldValue == null || fieldValue == "") {
-          "#NA"
+        if (fieldValue == "") {
+          rowValue(null)
         } else {
-          var value = fieldValue
-          if (value.contains("\"")) {
-            value = value.replaceAll("\"", "\"\"")
-          }
-          if (value.contains("\"") || value.contains("\n") || value.contains(",")) {
-            value = "\"" + value + "\""
-          }
-          value
+          rowValue(fieldValue)
         }
       }
       case _: DateType => {
