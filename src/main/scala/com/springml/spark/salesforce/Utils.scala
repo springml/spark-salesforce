@@ -16,6 +16,8 @@
 
 package com.springml.spark.salesforce
 
+import java.text.SimpleDateFormat
+
 import com.madhukaraphatak.sizeof.SizeEstimator
 import com.sforce.soap.partner.fault.UnexpectedErrorFault
 import com.sforce.soap.partner.{Connector, PartnerConnection, SaveResult}
@@ -24,7 +26,7 @@ import com.springml.spark.salesforce.metadata.MetadataConstructor
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{DataType, DateType, StringType, StructType, TimestampType}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.io.Source
@@ -47,6 +49,8 @@ object Utils extends Serializable {
     config.setServiceEndpoint(endpoint)
     Connector.newConnection(config)
   }
+
+  @transient val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
 
   def logSaveResultError(result: SaveResult): Unit = {
 
@@ -107,7 +111,7 @@ object Utils extends Serializable {
 
   def rowValue(rowVal: Any): String = {
     if (rowVal == null) {
-      "#NA"
+      ""
     } else {
       var value = rowVal.toString()
       if (value.contains("\"")) {
@@ -117,6 +121,43 @@ object Utils extends Serializable {
         value = "\"" + value + "\""
       }
       value
+    }
+  }
+
+  def cast(row: Row, toType: DataType, index: Int): String = {
+    toType match {
+      case _: StringType => {
+        val fieldValue = row.getAs[String](index)
+        if (fieldValue == null) {
+          "#NA"
+        } else {
+          var value = fieldValue
+          if (value.contains("\"")) {
+            value = value.replaceAll("\"", "\"\"")
+          }
+          if (value.contains("\"") || value.contains("\n") || value.contains(",")) {
+            value = "\"" + value + "\""
+          }
+          value
+        }
+      }
+      case _: DateType => {
+        val fieldValue = row.getAs[java.sql.Date](index)
+        if (fieldValue == null) {
+          ""
+        } else {
+          formatter.format(fieldValue)
+        }
+      }
+      case _: TimestampType => {
+        val fieldValue = row.getAs[java.sql.Timestamp](index)
+        if (fieldValue == null) {
+          ""
+        } else {
+          formatter.format(fieldValue)
+        }
+      }
+      case _ => rowValue(row.get(index))
     }
   }
 

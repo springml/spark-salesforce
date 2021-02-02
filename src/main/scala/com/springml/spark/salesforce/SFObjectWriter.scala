@@ -14,23 +14,29 @@ import com.springml.salesforce.wave.model.JobInfo
  * First column of dataframe contains Salesforce Object
  * Next subsequent columns are fields to be updated
  */
-class SFObjectWriter (
-    val username: String,
-    val password: String,
-    val login: String,
-    val version: String,
-    val sfObject: String,
-    val mode: SaveMode,
-    val upsert: Boolean,
-    val externalIdFieldName: String,
-    val csvHeader: String,
-    val batchSize: Integer
-    ) extends Serializable {
+class SFObjectWriter(
+                      val username: String,
+                      val password: String,
+                      val login: String,
+                      val version: String,
+                      val sfObject: String,
+                      val mode: SaveMode,
+                      val upsert: Boolean,
+                      val externalIdFieldName: String,
+                      val csvHeader: String,
+                      val batchSize: Integer
+                    ) extends Serializable {
 
   @transient val logger = Logger.getLogger(classOf[SFObjectWriter])
 
   def writeData(rdd: RDD[Row]): Boolean = {
-    val csvRDD = rdd.map(row => row.toSeq.map(value => Utils.rowValue(value)).mkString(","))
+
+    val csvRDD = rdd.map { row =>
+      val schema = row.schema
+      row.toSeq.indices.map(
+        index => Utils.cast(row, schema, index)
+      ).mkString(",")
+    }
 
     val partitionCnt = (1 + csvRDD.count() / batchSize).toInt
     val partitionedRDD = csvRDD.repartition(partitionCnt)
@@ -43,7 +49,7 @@ class SFObjectWriter (
     partitionedRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
         val records = iterator.toArray.mkString("\n")
-        var batchInfoId : String = null
+        var batchInfoId: String = null
         if (records != null && !records.isEmpty()) {
           val data = csvHeader + "\n" + records
           val batchInfo = bulkAPI.addBatch(jobId, data)
@@ -70,7 +76,7 @@ class SFObjectWriter (
     }
 
     print("Returning false...")
-    logger.info("Job not completed. Timeout..." )
+    logger.info("Job not completed. Timeout...")
     false
   }
 
