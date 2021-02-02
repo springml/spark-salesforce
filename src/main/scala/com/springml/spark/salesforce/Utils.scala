@@ -111,7 +111,7 @@ object Utils extends Serializable {
 
   def rowValue(rowVal: Any): String = {
     if (rowVal == null) {
-      "#NA"
+      "#N/A"
     } else {
       var value = rowVal.toString()
       if (value.contains("\"")) {
@@ -137,7 +137,7 @@ object Utils extends Serializable {
       case _: DateType => {
         val fieldValue = row.getAs[java.sql.Date](index)
         if (fieldValue == null) {
-          ""
+          rowValue(null)
         } else {
           formatter.format(fieldValue)
         }
@@ -145,7 +145,7 @@ object Utils extends Serializable {
       case _: TimestampType => {
         val fieldValue = row.getAs[java.sql.Timestamp](index)
         if (fieldValue == null) {
-          ""
+          rowValue(null)
         } else {
           formatter.format(fieldValue)
         }
