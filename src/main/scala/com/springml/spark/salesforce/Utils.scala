@@ -126,6 +126,10 @@ object Utils extends Serializable {
 
   def cast(row: Row, toType: DataType, index: Int): String = {
     toType match {
+      case _: BooleanType => {
+        // salesforce doesn't allow null booleans
+        rowValue(row.getAs[Boolean](index))
+      }
       case _: StringType => {
         val fieldValue = row.getAs[String](index)
         if (fieldValue == "") {
@@ -133,10 +137,6 @@ object Utils extends Serializable {
         } else {
           rowValue(fieldValue)
         }
-      }
-      case _: BooleanType => {
-        // salesforce doesn't allow null booleans
-        rowValue(row.getAs[Boolean](index))
       }
       case _ => rowValue(row.get(index))
     }
