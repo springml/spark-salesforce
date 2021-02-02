@@ -114,10 +114,13 @@ case class DatasetRelation(
     return records
   }
 
+  // NOTE: this function is only called when reading the data NOT when writing the data
   private def cast(fieldValue: String, toType: DataType,
                    nullable: Boolean = true, fieldName: String): Any = {
     if (fieldValue == null || fieldValue.isEmpty) {
-      "#N/A"
+      null
+    } else if (fieldValue == "" && nullable && !toType.isInstanceOf[StringType]) {
+      null
     } else {
       toType match {
         case _: ByteType => fieldValue.toByte
