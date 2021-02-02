@@ -128,7 +128,7 @@ object Utils extends Serializable {
     toType match {
       case _: StringType => {
         val fieldValue = row.getAs[String](index)
-        if (fieldValue == null) {
+        if (fieldValue == null || fieldValue == "") {
           "#NA"
         } else {
           var value = fieldValue
