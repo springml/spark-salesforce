@@ -142,19 +142,6 @@ object Utils extends Serializable {
     }
   }
 
-//  def cast(row: Row, toType: DataType, index: Int): String = {
-//    toType match {
-//      case _: BooleanType => {
-//        // salesforce doesn't allow null booleans
-//        row.getAs[Boolean](index).toString
-//      }
-//      case _: StringType => {
-//        "b"
-//      }
-//      case _ => "c"
-//    }
-//  }
-
   def metadataConfig(usersMetadataConfig: Option[String]) = {
     var systemMetadataConfig = readMetadataConfig()
     if (usersMetadataConfig != null && usersMetadataConfig.isDefined) {
