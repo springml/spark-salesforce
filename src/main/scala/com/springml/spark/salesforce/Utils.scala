@@ -16,24 +16,22 @@
 
 package com.springml.spark.salesforce
 
-import scala.io.Source
-import scala.util.parsing.json._
-import com.sforce.soap.partner.{ Connector, PartnerConnection, SaveResult }
-import com.sforce.ws.ConnectorConfig
+import java.text.SimpleDateFormat
+
 import com.madhukaraphatak.sizeof.SizeEstimator
+import com.sforce.soap.partner.fault.UnexpectedErrorFault
+import com.sforce.soap.partner.{Connector, PartnerConnection, SaveResult}
+import com.sforce.ws.ConnectorConfig
+import com.springml.spark.salesforce.metadata.MetadataConstructor
 import org.apache.log4j.Logger
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{ DoubleType, IntegerType, StructType }
-
-import scala.collection.immutable.HashMap
-import com.springml.spark.salesforce.metadata.MetadataConstructor
-import com.sforce.soap.partner.sobject.SObject
-import scala.concurrent.duration._
-import com.sforce.soap.partner.fault.UnexpectedErrorFault
+import org.apache.spark.sql.types.{BooleanType, DataType, StringType, StructType}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.io.Source
 import scala.util.Try
+import scala.util.parsing.json._
 
 /**
  * Utility to construct metadata and repartition RDD
@@ -51,6 +49,8 @@ object Utils extends Serializable {
     config.setServiceEndpoint(endpoint)
     Connector.newConnection(config)
   }
+
+  @transient val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
 
   def logSaveResultError(result: SaveResult): Unit = {
 
@@ -111,7 +111,7 @@ object Utils extends Serializable {
 
   def rowValue(rowVal: Any): String = {
     if (rowVal == null) {
-      ""
+      "#N/A"
     } else {
       var value = rowVal.toString()
       if (value.contains("\"")) {
@@ -121,6 +121,24 @@ object Utils extends Serializable {
         value = "\"" + value + "\""
       }
       value
+    }
+  }
+
+  def cast(row: Row, toType: DataType, index: Int): String = {
+    toType match {
+      case _: BooleanType => {
+        // salesforce doesn't allow null booleans
+        Option(row.getAs[Boolean](index)).getOrElse(false).toString
+      }
+      case _: StringType => {
+        val fieldValue = row.getAs[String](index)
+        if (fieldValue == "") {
+          rowValue(null)
+        } else {
+          rowValue(fieldValue)
+        }
+      }
+      case _ => rowValue(row.get(index))
     }
   }
 

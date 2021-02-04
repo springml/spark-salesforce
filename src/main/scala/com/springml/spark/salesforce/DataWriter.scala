@@ -74,7 +74,13 @@ class DataWriter (
   }
 
   def writeData(rdd: RDD[Row], metadataId: String): Boolean = {
-    val csvRDD = rdd.map(row => row.toSeq.map(value => Utils.rowValue(value)).mkString(","))
+    val csvRDD = rdd.map{row =>
+    val schema = row.schema.fields
+      row.toSeq.indices.map(
+        index =>  Utils.cast(row, schema(index).dataType, index)
+      ).mkString(",")
+    }
+
     csvRDD.mapPartitionsWithIndex {
       case (index, iterator) => {
         @transient val logger = Logger.getLogger(classOf[DataWriter])
