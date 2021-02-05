@@ -60,6 +60,7 @@ $ bin/spark-shell --packages com.springml:spark-salesforce_2.11:1.1.3
 * `pkChunking`: (Optional) Flag to enable automatic primary key chunking for bulk query job. This splits bulk queries into separate batches that of the size defined by `chunkSize` option. By default `false` and the default chunk size is 100,000.
 * `chunkSize`: (Optional) The size of the number of records to include in each batch. Default value is 100,000. This option can only be used when `pkChunking` is `true`. Maximum size is 250,000.
 * `timeout`: (Optional) The maximum time spent polling for the completion of bulk query job. This option can only be used when `bulk` is `true`.
+* `maxCharsPerColumn`(Optional) The maximum length of a column. This option can only be used when `bulk` is `true`. Default value is `4096`.
 * `externalIdFieldName`: (Optional) The name of the field used as the external ID for Salesforce Object. This value is only used when doing an update or upsert. Default "Id".
 * `queryAll`: (Optional) Toggle to retrieve deleted and archived records for SOQL queries. Default value is `false`.
 
