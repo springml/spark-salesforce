@@ -6,12 +6,10 @@ include:
 ###### common test step #####
 .spark-salesforce-test-info:
   variables:
-    PROJECT_DIRECTORY: "spark-salesforce"
-    SCALA_VERSION: "2.11"
+    PROJECT_DIRECTORY: .
 
 spark-salesforce-test-and-package-2-11:
   variables:
-    PROJECT_DIRECTORY: "spark-salesforce"
     SCALA_VERSION: "2.11"
   extends:
     - .spark-salesforce-test-info
@@ -21,7 +19,6 @@ spark-salesforce-test-and-package-2-11:
 
 spark-salesforce-test-and-package-2-12:
   variables:
-    PROJECT_DIRECTORY: "spark-salesforce"
     SCALA_VERSION: "2.12"
   extends:
     - .spark-salesforce-test-info
