@@ -18,9 +18,6 @@ spark-salesforce-test-and-package-2-11:
     - .test-and-package-jar
   script:
     - sbt '++ 2.11.12' test package
-  only:
-    changes:
-      - spark-salesforce/**/*
 
 spark-salesforce-test-and-package-2-12:
   variables:
@@ -29,9 +26,6 @@ spark-salesforce-test-and-package-2-12:
   extends:
     - .spark-salesforce-test-info
     - .test-and-package-jar
-  only:
-    changes:
-      - spark-salesforce/**/*
 
 publish spark salesforce:
   stage: publish
