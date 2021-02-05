@@ -47,7 +47,6 @@ case class BulkRelation(
     } else {
       records.schema
     }
-
   }
 
   lazy val records: DataFrame = {
