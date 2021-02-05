@@ -1,7 +1,9 @@
-
+include:
+  - project: 'slicelife/data-engineering/de-databricks-cicd'
+    ref: v1.30
+    file: 'databricks-jar-gitlab-ci-template.yml'
 
 ###### common test step #####
-# Split this back out if we split into more than a single jar
 .spark-salesforce-test-info:
   variables:
     PROJECT_DIRECTORY: "spark-salesforce"
