@@ -34,7 +34,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <encoding>UTF-8</encoding>
-        <spark.version>3.0.0</spark.version>
+        <spark.version>3.3.0</spark.version>
         <scala.version>2.12.11</scala.version>
         <scala.compat.version>2.12</scala.compat.version>
     </properties>
@@ -68,10 +68,21 @@
             <version>40.0.0</version>
         </dependency>
         <dependency>
-            <groupId>com.github.loanpal-engineering</groupId>
+            <groupId>com.springml</groupId>
             <artifactId>salesforce-wave-api</artifactId>
-            <version>1d662ac</version>
+            <version>1.0.8-loanpal</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.github.loanpal-engineering</groupId>-->
+<!--            <artifactId>salesforce-wave-api</artifactId>-->
+<!--            <version>1d662ac</version>-->
+<!--&lt;!&ndash;            <exclusions>&ndash;&gt;-->
+<!--&lt;!&ndash;                <exclusion>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <groupId>org.codehaus.woodstox</groupId>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <artifactId>stax2-api</artifactId>&ndash;&gt;-->
+<!--&lt;!&ndash;                </exclusion>&ndash;&gt;-->
+<!--&lt;!&ndash;            </exclusions>&ndash;&gt;-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -91,8 +102,19 @@
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
             <artifactId>woodstox-core-asl</artifactId>
-            <version>4.4.0</version>
+            <version>4.4.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.woodstox</groupId>
+                    <artifactId>stax2-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.codehaus.woodstox</groupId>-->
+<!--            <artifactId>stax2-api</artifactId>-->
+<!--            <version>4.2.1</version>-->
+<!--        </dependency>-->
     </dependencies>
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
@@ -114,6 +136,27 @@
                                 <jvmArg>-Xms1028m</jvmArg>
                                 <jvmArg>-Xmx4096m</jvmArg>
                             </jvmArgs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.fasterxml.jackson.dataformat</pattern>
+                                    <shadedPattern>com.shaded.fasterxml.jackson.dataformat</shadedPattern>
+                                </relocation>
+                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
