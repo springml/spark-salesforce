@@ -72,6 +72,7 @@ case class BulkRelation(
 
         // Use Csv parser to split CSV by rows to cover edge cases (ex. escaped characters, new line within string, etc)
         def splitCsvByRows(csvString: String): Seq[String] = {
+          if (csvString == "Records not found for this query") Seq.empty
           // The CsvParser interface only interacts with IO, so StringReader and StringWriter
           val inputReader = new StringReader(csvString)
 
