@@ -6,7 +6,7 @@
     <artifactId>spark-salesforce</artifactId>
     <packaging>jar</packaging>
     <description>spark-salesforce</description>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
     <name>spark-salesforce</name>
     <organization>
         <name>com.springml</name>
@@ -68,9 +68,9 @@
             <version>40.0.0</version>
         </dependency>
         <dependency>
-            <groupId>com.springml</groupId>
+            <groupId>com.github.loanpal-engineering</groupId>
             <artifactId>salesforce-wave-api</artifactId>
-            <version>1.0.8-loanpal</version>
+            <version>v1.1.0</version>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>com.github.loanpal-engineering</groupId>-->
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>com.github.loanpal-engineering</groupId>
             <artifactId>java-sizeof</artifactId>
-            <version>6d786c8</version>
+            <version>0.1</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.woodstox</groupId>
