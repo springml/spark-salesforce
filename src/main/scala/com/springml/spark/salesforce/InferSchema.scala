@@ -76,6 +76,7 @@ object InferSchema {
         case LongType => tryParseLong(field, sdf)
         case DoubleType => tryParseDouble(field, sdf)
         case TimestampType => tryParseTimestamp(field, sdf)
+        case BooleanType => tryParseBoolean(field)
         case StringType => StringType
         case other: DataType =>
           throw new UnsupportedOperationException(s"Unexpected data type $other")
