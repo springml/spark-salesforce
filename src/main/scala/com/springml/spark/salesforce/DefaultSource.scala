@@ -65,7 +65,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val sampleSize = parameters.getOrElse("sampleSize", "1000")
     val maxRetry = parameters.getOrElse("maxRetry", "5")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
-    val dateFormat = parameters.getOrElse("dateFormat", null)
+    val dateFormat = parameters.getOrElse("dateFormat", "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     // This is only needed for Spark version 1.5.2 or lower
     // Special characters in older version of spark is not handled properly
     val encodeFields = parameters.get("encodeFields")
