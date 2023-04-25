@@ -11,8 +11,8 @@ crossScalaVersions := Seq("2.11.12", "2.12.10")
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
-  "com.force.api" % "force-wsc" % "56.0.0",
-  "com.force.api" % "force-partner-api" % "56.0.0",
+  "com.force.api" % "force-wsc" % "40.0.0",
+  "com.force.api" % "force-partner-api" % "40.0.0",
   "com.springml" % "salesforce-wave-api" % "1.0.10",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
