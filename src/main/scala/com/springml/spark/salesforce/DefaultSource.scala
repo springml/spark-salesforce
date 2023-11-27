@@ -189,6 +189,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     if (sfObject.isEmpty) {
       throw new Exception("sfObject must not be empty when performing bulk query")
     }
+    logger.info("createBulkRelation :: sfObject: " + sfObject)
 
     val maxCharsPerColumnStr = parameters.getOrElse("maxCharsPerColumn", "4096")
     val maxCharsPerColumn = try {
@@ -196,6 +197,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     } catch {
       case e: Exception => throw new Exception("maxCharsPerColumn must be a valid integer")
     }
+    logger.info("createBulkRelation :: maxCharsPerColumn: " + maxCharsPerColumn)
 
     val timeoutStr = parameters.getOrElse("timeout", "600000")
     val timeout = try {
@@ -203,13 +205,16 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     } catch {
       case e: Exception => throw new Exception("timeout must be a valid integer")
     }
+    logger.info("createBulkRelation :: timeout: " + timeout)
 
     var customHeaders = ListBuffer[Header]()
     val pkChunkingStr = parameters.getOrElse("pkChunking", "false")
     val pkChunking = flag(pkChunkingStr, "pkChunkingStr")
+    logger.info("createBulkRelation :: pkChunking: " + pkChunking)
 
     if (pkChunking) {
       val chunkSize = parameters.get("chunkSize")
+      logger.info("createBulkRelation :: chunkSize: " + chunkSize)
 
       if (!chunkSize.isEmpty) {
         try {
@@ -219,6 +224,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           case e: Exception => throw new Exception("chunkSize must be a valid integer")
         }
         customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=${chunkSize.get}")
+//        customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=${chunkSize.get}; parent=Account")
       } else {
         customHeaders += new BasicHeader("Sforce-Enable-PKChunking", "true")
       }

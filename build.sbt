@@ -8,12 +8,13 @@ scalaVersion := "2.12.10"
 
 crossScalaVersions := Seq("2.11.12", "2.12.10")
 
+resolvers += Resolver.mavenLocal
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
-  "com.force.api" % "force-wsc" % "40.0.0",
-  "com.force.api" % "force-partner-api" % "40.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.10",
+  "com.force.api" % "force-wsc" % "52.2.0",
+  "com.force.api" % "force-partner-api" % "52.2.0",
+  "com.springml" % "salesforce-wave-api" % "1.0.8-uber-2",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
@@ -27,7 +28,6 @@ resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositori
 
 resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
-resolvers += "Spark Package Main Repo" at "https://dl.bintray.com/spark-packages/maven"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.3" % "test"
 libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.4.4"
@@ -53,7 +53,7 @@ spDescription := """Spark Salesforce Wave Connector
                     | - Constructs Salesforce Wave dataset's metadata using schema present in dataframe
                     | - Can use custom metadata for constructing Salesforce Wave dataset's metadata""".stripMargin
 
-// licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
+licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
@@ -86,5 +86,3 @@ pomExtra := (
         <url>http://www.springml.com</url>
       </developer>
     </developers>)
-
-
