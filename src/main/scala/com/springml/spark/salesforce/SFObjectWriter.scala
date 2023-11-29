@@ -8,6 +8,9 @@ import com.springml.salesforce.wave.api.BulkAPI
 import com.springml.salesforce.wave.util.WaveAPIConstants
 import com.springml.salesforce.wave.model.JobInfo
 
+import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.util.Try
+
 
 /**
  * Write class responsible for update Salesforce object using data provided in dataframe
@@ -43,6 +46,8 @@ class SFObjectWriter(
 
     val jobInfo = new JobInfo(WaveAPIConstants.STR_CSV, sfObject, operation(mode, upsert))
     jobInfo.setExternalIdFieldName(externalIdFieldName)
+//    jobInfo.setConcurrencyMode("Serial")
+//    jobInfo.setNumberRetries("10")
 
     val jobId = bulkAPI.createJob(jobInfo).getId
 
@@ -65,11 +70,11 @@ class SFObjectWriter(
     bulkAPI.closeJob(jobId)
     var i = 1
     while (i < 999999) {
+      val isComplete = bulkAPI.isCompleted(jobId)
       if (bulkAPI.isCompleted(jobId)) {
         logger.info("Job completed")
         return true
       }
-
       logger.info("Job not completed, waiting...")
       Thread.sleep(200)
       i = i + 1

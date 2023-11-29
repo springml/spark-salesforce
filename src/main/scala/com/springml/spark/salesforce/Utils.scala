@@ -18,7 +18,8 @@ package com.springml.spark.salesforce
 
 import java.text.SimpleDateFormat
 
-import com.madhukaraphatak.sizeof.SizeEstimator
+//import com.madhukaraphatak.sizeof.SizeEstimator
+import org.apache.spark.util.SizeEstimator
 import com.sforce.soap.partner.fault.UnexpectedErrorFault
 import com.sforce.soap.partner.{Connector, PartnerConnection, SaveResult}
 import com.sforce.ws.ConnectorConfig
