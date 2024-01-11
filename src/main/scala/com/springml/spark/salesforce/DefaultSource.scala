@@ -125,6 +125,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val monitorJob = parameters.getOrElse("monitorJob", "false")
     val externalIdFieldName = parameters.getOrElse("externalIdFieldName", "Id")
     val batchSizeStr = parameters.getOrElse("batchSize", "5000")
+    val bulkApiV2Str = parameters.getOrElse("bulkApiV2", "false")
     val batchSize = Try(batchSizeStr.toInt) match {
       case Success(v)=> v
       case Failure(e)=> {
@@ -134,6 +135,14 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
       }
     }
 
+    val bulkAPIV2 = Try(bulkApiV2Str.toBoolean) match {
+      case Success(v) => v
+      case Failure(e) => {
+        val errorMsg = "bulkAPIV2 parameter not a boolean."
+        logger.error(errorMsg)
+        throw new Exception(errorMsg)
+      }
+    }
     validateMutualExclusive(datasetName, sfObject, "datasetName", "sfObject")
 
     if (datasetName.isDefined) {
@@ -150,8 +159,14 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
           flag(upsert, "upsert"), flag(monitorJob, "monitorJob"), data, metadataFile)
     } else {
       logger.info("Updating Salesforce Object")
-      updateSalesforceObject(username, password, login, version, sfObject.get, mode,
+      if(bulkAPIV2) {
+        updateSalesforceObjectV2(username, password, login, version, sfObject.get, mode,
           flag(upsert, "upsert"), externalIdFieldName, batchSize, data)
+      } else {
+        updateSalesforceObject(username, password, login, version, sfObject.get, mode,
+          flag(upsert, "upsert"), externalIdFieldName, batchSize, data)
+      }
+
     }
 
     return createReturnRelation(data)
@@ -178,6 +193,30 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val writer = new SFObjectWriter(username, password, login, version, sfObject, mode, upsert, externalIdFieldName, csvHeader, batchSize)
     logger.info("Writing data")
     val successfulWrite = writer.writeData(repartitionedRDD)
+    logger.info(s"Writing data was successful was $successfulWrite")
+    if (!successfulWrite) {
+      sys.error("Unable to update salesforce object")
+    }
+
+  }
+
+  private def updateSalesforceObjectV2(
+                                      username: String,
+                                      password: String,
+                                      login: String,
+                                      version: String,
+                                      sfObject: String,
+                                      mode: SaveMode,
+                                      upsert: Boolean,
+                                      externalIdFieldName: String,
+                                      batchSize: Integer,
+                                      data: DataFrame) {
+
+    val csvHeader = Utils.csvHeadder(data.schema)
+
+    val writer = new SFObjectWriter2(username, password, login, version, sfObject, mode, upsert, externalIdFieldName, csvHeader, batchSize)
+    logger.info("Writing data")
+    val successfulWrite = writer.writeData(data.rdd)
     logger.info(s"Writing data was successful was $successfulWrite")
     if (!successfulWrite) {
       sys.error("Unable to update salesforce object")
