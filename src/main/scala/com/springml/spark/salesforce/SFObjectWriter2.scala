@@ -11,7 +11,9 @@ import org.apache.spark.sql.{Row, SaveMode}
 import endolabs.salesforce.bulkv2.{AccessToken, Bulk2Client, Bulk2ClientBuilder}
 import com.force.api._
 import endolabs.salesforce.bulkv2.`type`.OperationEnum
+import endolabs.salesforce.bulkv2.response.GetJobInfoResponse
 
+import scala.util.Try
 import scala.collection.JavaConverters.{asScalaBufferConverter, asScalaIteratorConverter}
 
 class SFObjectWriter2(val username: String,
@@ -68,15 +70,19 @@ class SFObjectWriter2(val username: String,
         List(id).iterator
       }
     }.collect().filter(_ != null)
-
+    val allIds = bulkJobIDs
 
     var i = 1
     var failedRecords = 0
     val TIMEOUT_MAX = 7000
     val BREAK_LOOP = 9000
+    var isEmpty = false
     while (i < TIMEOUT_MAX) {
-      val data = bulkJobIDs.map{
-        id => client.getJobInfo(id)
+      var data: Array[GetJobInfoResponse] = Array()
+      try {
+       data = bulkJobIDs.map{
+        id =>
+          client.getJobInfo(id)
       }
       failedRecords += data.map(x => x.getNumberRecordsFailed.toInt).sum
 
@@ -94,19 +100,25 @@ class SFObjectWriter2(val username: String,
       }
       println(s"${data.count(x=> x.isFinished)} finished jobs ${data.length} remanining jobs")
       println(s"${data.take(10).map(x => (x.getId, x.getState.toJsonValue)).mkString(",")} sample states")
+      } catch {
+        case e: Exception => println(e)
+          bulkJobIDs = allIds
+      }
       if (data.count(x=> x.isFinished) == data.length) {
         i = BREAK_LOOP
+        isEmpty = data.isEmpty
+      } else {
+        bulkJobIDs = data.filter(x => !x.isFinished).map(x => x.getId)
+        logger.info("Job not completed, waiting...")
+        Thread.sleep(10000)
+        i = i + 1
       }
-//      if(client().getAllJobs.getRecords.asScala.filter(!_.isFinished).isEmpty) {
-//        i = BREAK_LOOP
-//      }
-      bulkJobIDs = data.filter(x => !x.isFinished).map(x => x.getId)
-      logger.info("Job not completed, waiting...")
-      Thread.sleep(2000)
-      i = i + 1
+    }
+    if(isEmpty) {
+      return true
     }
 
-    if (i == BREAK_LOOP && failedRecords != 0){
+    if (i == BREAK_LOOP && failedRecords == 0){
       return true
     } else if(failedRecords != 0) {
       logger.info("Job failed. Timeout...")
