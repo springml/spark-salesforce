@@ -24,12 +24,6 @@
         <developerConnection>scm:git:git@github.com:springml/spark-salesforce</developerConnection>
         <url>github.com/springml/spark-salesforce</url>
     </scm>
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -57,15 +51,16 @@
             <version>${spark.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- -->
         <dependency>
             <groupId>com.force.api</groupId>
             <artifactId>force-wsc</artifactId>
-            <version>40.0.0</version>
+            <version>53.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.force.api</groupId>
             <artifactId>force-partner-api</artifactId>
-            <version>40.0.0</version>
+            <version>53.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.springml</groupId>
