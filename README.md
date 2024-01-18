@@ -20,6 +20,7 @@ You can link against this library in your program at the following ways:
     <version>1.1.3</version>
 </dependency>
 ```
+or _2.12 for Scala 2.12
 
 ### SBT Dependency
 ```
